@@ -37,7 +37,7 @@ class ViewParams:
 
 class KnotWindow:
     dot_ids = {}
-    line_ids = {}
+    line_ids = []
 
     def __init__(self, kp: KnotParams = KnotParams(), vp: ViewParams = ViewParams()) -> None:
         super().__init__()
@@ -49,7 +49,7 @@ class KnotWindow:
         canvas = tk.Canvas(window, bg="white", height=vp.height, width=vp.width)
         self.canvas = canvas
         canvas.pack()
-        self.draw_dots()
+        self.draw_init()
 
         window.mainloop()
 
@@ -69,13 +69,14 @@ class KnotWindow:
 
     def get_neighbors(self, col, row):
         out = [(col - 1, row), (col, row - 1), (col + 1, row), (col, row + 1)]
-        out = filter(
+        return filter(
             lambda coord: coord[0] >= 0 and coord[0] < self.kp.cols and coord[1] >= 0 and coord[1] < self.kp.rows)
 
-    def draw_dots(self):
+    def draw_init(self):
+        lines_drawn = []
         for row in range(0, self.kp.rows * 2 - 1):
             for col in range(0, self.kp.cols * 2 - 1):
-                x, y = self.get_pixel(col * 2, row * 2)
+                x, y = self.get_pixel(col, row)
                 dr = self.vp.dot_radius
                 nodetype = self.get_node_type(col, row)
                 if nodetype is NodeType.PRIMARY:
@@ -87,6 +88,11 @@ class KnotWindow:
                 if color:
                     dot_id = self.canvas.create_oval(x - dr, y - dr, x + dr, y + dr, outline=color, fill=color)
                     self.dot_ids[x, y] = dot_id
+                # else:
+                #     for neighbor in self.get_neighbors(col, row):
+                #         if neighbor not in lines_drawn:
+                #             self.line_ids.append(self.canvas.create_line(x, y))
+
 
 
 def main(name):
