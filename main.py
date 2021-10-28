@@ -10,7 +10,7 @@ class NodeType(Enum):
 
 class KnotParams:
     rows = 8
-    cols = 24
+    cols = 32
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
@@ -20,8 +20,8 @@ class KnotParams:
 
 class ViewParams:
     height = 360
-    width = 720
-    unit_length = 24
+    width = 1440
+    unit_length = 46
     dot_radius = 2
     primary_color = "blue"
     secondary_color = "violet"
