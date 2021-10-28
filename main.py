@@ -1,5 +1,11 @@
 import tkinter as tk
 from tkinter import ttk
+from enum import Enum
+
+class NodeType(Enum):
+    PRIMARY = 1
+    SECONDARY = 2
+    LINE = 3
 
 
 class KnotParams:
@@ -31,6 +37,7 @@ class ViewParams:
 
 class KnotWindow:
     dot_ids = {}
+    line_ids = {}
 
     def __init__(self, kp: KnotParams = KnotParams(), vp: ViewParams = ViewParams()) -> None:
         super().__init__()
@@ -52,6 +59,14 @@ class KnotWindow:
     def by_primary_index(self, col, row):
         pass
 
+    def get_node_type(self, col, row):
+        if row % 2 == 0 and col % 2 == 0:
+            return NodeType.PRIMARY
+        elif row % 2 == 1 and col % 2 == 1:
+            return NodeType.SECONDARY
+        return NodeType.LINE
+
+
     def get_neighbors(self, col, row):
         out = [(col - 1, row), (col, row - 1), (col + 1, row), (col, row + 1)]
         out = filter(
@@ -62,11 +77,10 @@ class KnotWindow:
             for col in range(0, self.kp.cols * 2 - 1):
                 x, y = self.get_pixel(col * 2, row * 2)
                 dr = self.vp.dot_radius
-                primary = row % 2 == 0 and col % 2 == 0
-                secondary = row % 2 == 1 and col % 2 == 1
-                if primary:
+                nodetype = self.get_node_type(col, row)
+                if nodetype is NodeType.PRIMARY:
                     color = self.vp.primary_color
-                elif secondary:
+                elif nodetype is NodeType.SECONDARY:
                     color = self.vp.secondary_color
                 else:
                     color = None # self.vp.line_color
