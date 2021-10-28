@@ -9,8 +9,8 @@ class NodeType(Enum):
 
 
 class KnotParams:
-    rows = 4
-    cols = 32
+    rows = 8
+    cols = 24
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
@@ -19,7 +19,7 @@ class KnotParams:
 
 
 class ViewParams:
-    height = 720
+    height = 360
     width = 720
     unit_length = 24
     dot_radius = 2
@@ -68,14 +68,14 @@ class KnotWindow:
 
 
     def get_neighbors(self, col, row):
-        out = [(col - 1, row), (col, row - 1), (col + 1, row), (col, row + 1)]
+        out = [(col - 1, row-1), (col+1, row - 1), (col + 1, row+1), (col-1, row + 1)]
         return filter(
-            lambda coord: coord[0] >= 0 and coord[0] < self.kp.cols and coord[1] >= 0 and coord[1] < self.kp.rows)
+            lambda coord: 0 <= coord[0] < self.kp.cols -1 and 0 <= coord[1] < self.kp.rows -1, out)
 
     def draw_init(self):
         lines_drawn = []
-        for row in range(0, self.kp.rows * 2 - 1):
-            for col in range(0, self.kp.cols * 2 - 1):
+        for row in range(0, self.kp.rows - 1):
+            for col in range(0, self.kp.cols - 1):
                 x, y = self.get_pixel(col, row)
                 dr = self.vp.dot_radius
                 nodetype = self.get_node_type(col, row)
@@ -88,10 +88,11 @@ class KnotWindow:
                 if color:
                     dot_id = self.canvas.create_oval(x - dr, y - dr, x + dr, y + dr, outline=color, fill=color)
                     self.dot_ids[x, y] = dot_id
-                # else:
-                #     for neighbor in self.get_neighbors(col, row):
-                #         if neighbor not in lines_drawn:
-                #             self.line_ids.append(self.canvas.create_line(x, y))
+                else:
+                    for neighbor in self.get_neighbors(col, row):
+                        if neighbor not in lines_drawn:
+                            print("{} {} {}".format(x, y, neighbor))
+                            self.line_ids.append(self.canvas.create_line(x, y, *self.get_pixel(*neighbor), fill=self.vp.line_color))
 
 
 
