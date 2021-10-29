@@ -23,7 +23,7 @@ class Pattern:
 
 class KnotParams:
     rows = 9
-    cols = 32
+    cols = 33
     pattern = Pattern()
 
     def __init__(self, **kwargs) -> None:
@@ -33,9 +33,7 @@ class KnotParams:
 
 
 class ViewParams:
-    height = 420
-    width = 1440
-    unit_length = 46
+    unit_length = 24
     dot_radius = 2
     primary_color = "blue"
     secondary_color = "violet"
@@ -66,11 +64,17 @@ class KnotWindow:
             if col not in self.vertical_lines:
                 self.vertical_lines[col] = []
         self.vertical_lines[0].append((0, self.kp.rows - 1))
+        self.vertical_lines[self.kp.cols -1].append((0, self.kp.rows - 1))
+        for row in range(self.kp.rows):
+            if row not in self.horizontal_lines:
+                self.horizontal_lines[row] = []
+        self.horizontal_lines[0].append((0, self.kp.cols - 1))
+        self.horizontal_lines[self.kp.rows -1].append((0, self.kp.cols - 1))
 
         window = tk.Tk()
         greeting = tk.Label(text="Knots")
         greeting.pack()
-        canvas = tk.Canvas(window, bg="white", height=vp.height, width=vp.width)
+        canvas = tk.Canvas(window, bg="white", height=self.max_y()+self.vp.y_padding, width=self.max_x()+self.vp.x_padding)
         self.canvas = canvas
         canvas.pack()
         self.draw_init()
@@ -145,7 +149,7 @@ class KnotWindow:
 
 
 def main(name):
-    kw = KnotWindow()
+    kw = KnotWindow(vp=ViewParams())
 
 
 # Press the green button in the gutter to run the script.
