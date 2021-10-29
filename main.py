@@ -9,7 +9,7 @@ class NodeType(Enum):
 
 
 class KnotParams:
-    rows = 8
+    rows = 9
     cols = 32
 
     def __init__(self, **kwargs) -> None:
@@ -19,7 +19,7 @@ class KnotParams:
 
 
 class ViewParams:
-    height = 360
+    height = 420
     width = 1440
     unit_length = 46
     dot_radius = 2
@@ -28,6 +28,7 @@ class ViewParams:
     line_color = "lightgreen"
     x_padding = 10
     y_padding = 10
+    line_width = 4
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
@@ -74,8 +75,8 @@ class KnotWindow:
 
     def draw_init(self):
         lines_drawn = []
-        for row in range(0, self.kp.rows - 1):
-            for col in range(0, self.kp.cols - 1):
+        for row in range(0, self.kp.rows):
+            for col in range(0, self.kp.cols):
                 x, y = self.get_pixel(col, row)
                 dr = self.vp.dot_radius
                 nodetype = self.get_node_type(col, row)
@@ -91,8 +92,8 @@ class KnotWindow:
                 else:
                     for neighbor in self.get_neighbors(col, row):
                         if neighbor not in lines_drawn:
-                            print("{} {} {}".format(x, y, neighbor))
-                            self.line_ids.append(self.canvas.create_line(x, y, *self.get_pixel(*neighbor), fill=self.vp.line_color))
+                            # print("{} {} {}".format(x, y, neighbor))
+                            self.line_ids.append(self.canvas.create_line(x, y, *self.get_pixel(*neighbor), width=self.vp.line_width, fill=self.vp.line_color))
 
 
 
