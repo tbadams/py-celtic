@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from enum import Enum
+from typing import Optional
 
 
 class NodeType(Enum):
@@ -68,8 +69,8 @@ class ViewParams:
 class KnotWindow:
     dot_ids = {}
     line_ids = []
-    horizontal_lines: dict = {}
-    vertical_lines: dict = {}
+    horizontal_blocks: dict = {}
+    vertical_blocks: dict = {}
 
     def __init__(self, kp: KnotParams = KnotParams(), vp: ViewParams = ViewParams()) -> None:
         super().__init__()
@@ -78,15 +79,15 @@ class KnotWindow:
 
         # init borders
         for col in range(self.kp.cols):
-            if col not in self.vertical_lines:
-                self.vertical_lines[col] = []
-        self.vertical_lines[0].append((0, self.kp.rows - 1))
-        self.vertical_lines[self.kp.cols - 1].append((0, self.kp.rows - 1))
+            if col not in self.vertical_blocks:
+                self.vertical_blocks[col] = []
+        self.vertical_blocks[0].append((0, self.kp.rows - 1))
+        self.vertical_blocks[self.kp.cols - 1].append((0, self.kp.rows - 1))
         for row in range(self.kp.rows):
-            if row not in self.horizontal_lines:
-                self.horizontal_lines[row] = []
-        self.horizontal_lines[0].append((0, self.kp.cols - 1))
-        self.horizontal_lines[self.kp.rows - 1].append((0, self.kp.cols - 1))
+            if row not in self.horizontal_blocks:
+                self.horizontal_blocks[row] = []
+        self.horizontal_blocks[0].append((0, self.kp.cols - 1))
+        self.horizontal_blocks[self.kp.rows - 1].append((0, self.kp.cols - 1))
 
         window = tk.Tk()
         greeting = tk.Label(text="Knots")
@@ -135,6 +136,22 @@ class KnotWindow:
         return filter(
             lambda coord: 0 <= coord[1][0] < self.max_x() and 0 <= coord[1][1] < self.max_y(), out.items())
 
+    def is_blocking(self, col, row, orientation:Optional[Orientation] = None):
+        if not orientation:
+            return self.is_blocking(col, row, Orientation.HORIZONTAL) or self.is_blocking(col, row, Orientation.VERTICAL)
+        if orientation == Orientation.HORIZONTAL:
+            blocks = self.horizontal_blocks[row]
+            lane_index:int = col
+        else:
+            blocks = self.vertical_blocks[col]
+            lane_index:int = row
+        for block in blocks:
+            block_start:int = block[0]
+            block_end:int = block[1]
+            if block_start <= lane_index <= block_end:
+                return True
+        return False
+
     def draw_coord_line(self, x1: int, y1: int, x2: int, y2: int):
         pass
 
@@ -154,33 +171,34 @@ class KnotWindow:
                 if color:
                     dot_id = self.canvas.create_oval(x - dr, y - dr, x + dr, y + dr, outline=color, fill=color)
                     self.dot_ids[x, y] = dot_id
-                else:
+                if nodetype is NodeType.LINE:
                     for corner in self.get_corners(x, y):
                         corner_type = corner[0]
                         corner_coords = corner[1]
                         crossing_adjusted_x = x
                         crossing_adjusted_y = y
                         cross_direction = Diagonal.LEFTDOWN_RIGHTUP  # TODO something else
-                        if (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
-                            and corner_type == CornerDirection.LEFTUP) or \
-                                (cross_direction == Diagonal.LEFTUP_RIGHTDOWN
-                                 and corner_type == CornerDirection.LEFTDOWN):
-                            crossing_adjusted_x = x - self.vp.crossing_gap_length
-                        elif (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
-                              and corner_type == CornerDirection.RIGHTDOWN) or (
-                                cross_direction == Diagonal.LEFTUP_RIGHTDOWN
-                                and corner_type == CornerDirection.RIGHTUP):
-                            crossing_adjusted_x = x + self.vp.crossing_gap_length
-                        if (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
-                            and corner_type == CornerDirection.LEFTUP) or \
-                                (cross_direction == Diagonal.LEFTUP_RIGHTDOWN
-                                 and corner_type == CornerDirection.RIGHTUP):
-                            crossing_adjusted_y = y - self.vp.crossing_gap_length
-                        elif (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
-                              and corner_type == CornerDirection.RIGHTDOWN) or (
-                                cross_direction == Diagonal.LEFTUP_RIGHTDOWN
-                                and corner_type == CornerDirection.LEFTDOWN):
-                            crossing_adjusted_y = y + self.vp.crossing_gap_length
+                        if not self.is_blocking(col, row):
+                            if (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                                and corner_type == CornerDirection.LEFTUP) or \
+                                    (cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                                     and corner_type == CornerDirection.LEFTDOWN):
+                                crossing_adjusted_x = x - self.vp.crossing_gap_length
+                            elif (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                                  and corner_type == CornerDirection.RIGHTDOWN) or (
+                                    cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                                    and corner_type == CornerDirection.RIGHTUP):
+                                crossing_adjusted_x = x + self.vp.crossing_gap_length
+                            if (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                                and corner_type == CornerDirection.LEFTUP) or \
+                                    (cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                                     and corner_type == CornerDirection.RIGHTUP):
+                                crossing_adjusted_y = y - self.vp.crossing_gap_length
+                            elif (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                                  and corner_type == CornerDirection.RIGHTDOWN) or (
+                                    cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                                    and corner_type == CornerDirection.LEFTDOWN):
+                                crossing_adjusted_y = y + self.vp.crossing_gap_length
 
                         self.line_ids.append(self.canvas.create_line(crossing_adjusted_x, crossing_adjusted_y, *corner_coords,
                                                                      width=self.vp.line_width,
@@ -193,7 +211,8 @@ class KnotWindow:
 
 
 def main(name):
-    kw = KnotWindow(vp=ViewParams())
+    no_dots = {"primary_color":None, "secondary_color":None}
+    kw = KnotWindow(vp=ViewParams(**no_dots))
 
 
 # Press the green button in the gutter to run the script.
