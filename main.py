@@ -2,24 +2,40 @@ import tkinter as tk
 from tkinter import ttk
 from enum import Enum
 
+
 class NodeType(Enum):
     PRIMARY = 1
     SECONDARY = 2
     LINE = 3
 
-class Direction(Enum):
+
+class Orientation(Enum):
     HORIZONTAL = 1
     VERTICAL = 2
 
+
+class Diagonal(Enum):
+    LEFTDOWN_RIGHTUP = 1
+    LEFTUP_RIGHTDOWN = 2
+
+
+class CornerDirection(Enum):
+    LEFTUP = 1
+    RIGHTUP = 2
+    RIGHTDOWN = 3
+    LEFTDOWN = 4
+
+
 class Pattern:
     vertical_lines = {}
-    horizontal_lines = {2, (1,2)}
+    horizontal_lines = {2, (1, 2)}
     length = 4
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
 
         self.__dict__.update(kwargs)
+
 
 class KnotParams:
     rows = 9
@@ -34,6 +50,7 @@ class KnotParams:
 
 class ViewParams:
     unit_length = 24
+    crossing_gap_length = 6
     dot_radius = 2
     primary_color = "blue"
     secondary_color = "violet"
@@ -51,8 +68,8 @@ class ViewParams:
 class KnotWindow:
     dot_ids = {}
     line_ids = []
-    horizontal_lines:dict={}
-    vertical_lines:dict={}
+    horizontal_lines: dict = {}
+    vertical_lines: dict = {}
 
     def __init__(self, kp: KnotParams = KnotParams(), vp: ViewParams = ViewParams()) -> None:
         super().__init__()
@@ -64,17 +81,18 @@ class KnotWindow:
             if col not in self.vertical_lines:
                 self.vertical_lines[col] = []
         self.vertical_lines[0].append((0, self.kp.rows - 1))
-        self.vertical_lines[self.kp.cols -1].append((0, self.kp.rows - 1))
+        self.vertical_lines[self.kp.cols - 1].append((0, self.kp.rows - 1))
         for row in range(self.kp.rows):
             if row not in self.horizontal_lines:
                 self.horizontal_lines[row] = []
         self.horizontal_lines[0].append((0, self.kp.cols - 1))
-        self.horizontal_lines[self.kp.rows -1].append((0, self.kp.cols - 1))
+        self.horizontal_lines[self.kp.rows - 1].append((0, self.kp.cols - 1))
 
         window = tk.Tk()
         greeting = tk.Label(text="Knots")
         greeting.pack()
-        canvas = tk.Canvas(window, bg="white", height=self.max_y()+self.vp.y_padding, width=self.max_x()+self.vp.x_padding)
+        canvas = tk.Canvas(window, bg="white", height=self.max_y() + self.vp.y_padding,
+                           width=self.max_x() + self.vp.x_padding)
         self.canvas = canvas
         canvas.pack()
         self.draw_init()
@@ -83,7 +101,6 @@ class KnotWindow:
 
     def get_pixel(self, col, row):
         return self.vp.x_padding + (col * self.vp.unit_length), self.vp.y_padding + (row * self.vp.unit_length)
-
 
     def max_y(self):
         return self.vp.y_padding + (self.kp.rows - 1) * self.vp.unit_length
@@ -101,20 +118,24 @@ class KnotWindow:
             return NodeType.SECONDARY
         return NodeType.LINE
 
+    def get_lane_type(self, index: int):
+        return NodeType.PRIMARY if index % 2 == 0 else NodeType.SECONDARY
 
     def get_neighbors(self, col, row):
-        out = [(col - 1, row-1), (col+1, row - 1), (col + 1, row+1), (col-1, row + 1)]
+        out = [(col - 1, row - 1), (col + 1, row - 1), (col + 1, row + 1), (col - 1, row + 1)]
         return filter(
-            lambda coord: 0 <= coord[0] < self.kp.cols -1 and 0 <= coord[1] < self.kp.rows -1, out)
+            lambda coord: 0 <= coord[0] < self.kp.cols - 1 and 0 <= coord[1] < self.kp.rows - 1, out)
 
     def get_corners(self, x, y):
         half_unit = self.vp.unit_length / 2
-        out = [(x-half_unit, y-half_unit), (x+half_unit, y-half_unit), (x-half_unit,y+half_unit), (x+half_unit, y+half_unit)]
+        out = {CornerDirection.LEFTUP: (x - half_unit, y - half_unit),
+               CornerDirection.RIGHTUP: (x + half_unit, y - half_unit),
+               CornerDirection.RIGHTDOWN: (x + half_unit, y + half_unit),
+               CornerDirection.LEFTDOWN: (x - half_unit, y + half_unit)}
         return filter(
-            lambda coord: 0 <= coord[0] < self.max_x() and 0 <= coord[1] < self.max_y(), out)
+            lambda coord: 0 <= coord[1][0] < self.max_x() and 0 <= coord[1][1] < self.max_y(), out.items())
 
-
-    def draw_coord_line(self, x1:int, y1:int, x2:int, y2:int):
+    def draw_coord_line(self, x1: int, y1: int, x2: int, y2: int):
         pass
 
     def draw_init(self):
@@ -129,18 +150,41 @@ class KnotWindow:
                 elif nodetype is NodeType.SECONDARY:
                     color = self.vp.secondary_color
                 else:
-                    color = None # self.vp.line_color
+                    color = None  # self.vp.line_color
                 if color:
                     dot_id = self.canvas.create_oval(x - dr, y - dr, x + dr, y + dr, outline=color, fill=color)
                     self.dot_ids[x, y] = dot_id
                 else:
+                    for corner in self.get_corners(x, y):
+                        corner_type = corner[0]
+                        corner_coords = corner[1]
+                        crossing_adjusted_x = x
+                        crossing_adjusted_y = y
+                        cross_direction = Diagonal.LEFTDOWN_RIGHTUP  # TODO something else
+                        if (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                            and corner_type == CornerDirection.LEFTUP) or \
+                                (cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                                 and corner_type == CornerDirection.LEFTDOWN):
+                            crossing_adjusted_x = x - self.vp.crossing_gap_length
+                        elif (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                              and corner_type == CornerDirection.RIGHTDOWN) or (
+                                cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                                and corner_type == CornerDirection.RIGHTUP):
+                            crossing_adjusted_x = x + self.vp.crossing_gap_length
+                        if (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                            and corner_type == CornerDirection.LEFTUP) or \
+                                (cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                                 and corner_type == CornerDirection.RIGHTUP):
+                            crossing_adjusted_y = y - self.vp.crossing_gap_length
+                        elif (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                              and corner_type == CornerDirection.RIGHTDOWN) or (
+                                cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                                and corner_type == CornerDirection.LEFTDOWN):
+                            crossing_adjusted_y = y + self.vp.crossing_gap_length
 
-                    for corner in self.get_corners(x,y):                   # if neighbor not in lines_drawn:
-                            # print("{} {} {}".format(x, y, neighbor))
-                        # self.line_ids.append(self.canvas.create_line(x, y, *self.get_pixel(*neighbor), width=self.vp.line_width, fill=self.vp.line_color))
-                        self.line_ids.append(self.canvas.create_line(x, y, *corner,
+                        self.line_ids.append(self.canvas.create_line(crossing_adjusted_x, crossing_adjusted_y, *corner_coords,
                                                                      width=self.vp.line_width,
-                                                                    fill=self.vp.line_color))
+                                                                     fill=self.vp.line_color))
 
         # draw pattern
         dis_length = 0
