@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from enum import Enum
 from typing import Optional
+from collections import deque
 
 
 class NodeType(Enum):
@@ -71,12 +72,27 @@ class KnotWindow:
     line_ids = []
     horizontal_blocks: dict = {}
     vertical_blocks: dict = {}
+    cross_dirs = {}
 
     def __init__(self, kp: KnotParams = KnotParams(), vp: ViewParams = ViewParams()) -> None:
         super().__init__()
         self.kp = kp
         self.vp = vp
 
+        self.setup_blocks()
+
+        window = tk.Tk()
+        greeting = tk.Label(text="Knots")
+        greeting.pack()
+        canvas = tk.Canvas(window, bg="white", height=self.max_y() + self.vp.y_padding,
+                           width=self.max_x() + self.vp.x_padding)
+        self.canvas = canvas
+        canvas.pack()
+        self.draw_init()
+
+        window.mainloop()
+
+    def setup_blocks(self):
         # init borders
         for col in range(self.kp.cols):
             if col not in self.vertical_blocks:
@@ -89,16 +105,22 @@ class KnotWindow:
         self.horizontal_blocks[0].append((0, self.kp.cols - 1))
         self.horizontal_blocks[self.kp.rows - 1].append((0, self.kp.cols - 1))
 
-        window = tk.Tk()
-        greeting = tk.Label(text="Knots")
-        greeting.pack()
-        canvas = tk.Canvas(window, bg="white", height=self.max_y() + self.vp.y_padding,
-                           width=self.max_x() + self.vp.x_padding)
-        self.canvas = canvas
-        canvas.pack()
-        self.draw_init()
+        # setup crosses
+        queue = deque()
+        start = (0, 1)
+        self.cross_dirs[start] = Diagonal.LEFTDOWN_RIGHTUP
+        queue.append(start)
+        while queue:
+            next_node = queue.popleft()
+            new_polarity = Diagonal.LEFTUP_RIGHTDOWN if self.cross_dirs[next_node]==Diagonal.LEFTDOWN_RIGHTUP else Diagonal.LEFTDOWN_RIGHTUP
+            neighbors = self.get_neighbors(*next_node)
+            for neighbor in neighbors:
+                if neighbor not in self.cross_dirs:
+                    queue.append(neighbor)
+                    self.cross_dirs[neighbor] = new_polarity
 
-        window.mainloop()
+
+
 
     def get_pixel(self, col, row):
         return self.vp.x_padding + (col * self.vp.unit_length), self.vp.y_padding + (row * self.vp.unit_length)
@@ -125,7 +147,7 @@ class KnotWindow:
     def get_neighbors(self, col, row):
         out = [(col - 1, row - 1), (col + 1, row - 1), (col + 1, row + 1), (col - 1, row + 1)]
         return filter(
-            lambda coord: 0 <= coord[0] < self.kp.cols - 1 and 0 <= coord[1] < self.kp.rows - 1, out)
+            lambda coord: 0 <= coord[0] < self.kp.cols  and 0 <= coord[1] < self.kp.rows, out)
 
     def get_corners(self, x, y):
         half_unit = self.vp.unit_length / 2
@@ -177,7 +199,7 @@ class KnotWindow:
                         corner_coords = corner[1]
                         crossing_adjusted_x = x
                         crossing_adjusted_y = y
-                        cross_direction = Diagonal.LEFTDOWN_RIGHTUP  # TODO something else
+                        cross_direction = self.cross_dirs[(col, row)]
                         if not self.is_blocking(col, row):
                             if (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
                                 and corner_type == CornerDirection.LEFTUP) or \
