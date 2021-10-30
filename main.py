@@ -30,7 +30,7 @@ class CornerDirection(Enum):
 
 class Pattern:
     vertical_lines = {}
-    horizontal_lines = {2, (1, 2)}
+    horizontal_lines = {4:(2, 4)}
     length = 4
 
     def __init__(self, **kwargs) -> None:
@@ -105,21 +105,26 @@ class KnotWindow:
         self.horizontal_blocks[0].append((0, self.kp.cols - 1))
         self.horizontal_blocks[self.kp.rows - 1].append((0, self.kp.cols - 1))
 
+        # input
+        for index in self.kp.pattern.vertical_lines:
+            self.vertical_blocks[index] = [self.kp.pattern.vertical_lines[index]]
+        for index in self.kp.pattern.horizontal_lines:
+            self.horizontal_blocks[index] = [self.kp.pattern.horizontal_lines[index]]
+
         # setup crosses
         queue = deque()
-        start = (0, 1)
+        start = (1, 2)
         self.cross_dirs[start] = Diagonal.LEFTDOWN_RIGHTUP
         queue.append(start)
         while queue:
             next_node = queue.popleft()
-            new_polarity = Diagonal.LEFTUP_RIGHTDOWN if self.cross_dirs[next_node]==Diagonal.LEFTDOWN_RIGHTUP else Diagonal.LEFTDOWN_RIGHTUP
+            old_polarity = self.cross_dirs[next_node]
+            new_polarity = Diagonal.LEFTUP_RIGHTDOWN if old_polarity==Diagonal.LEFTDOWN_RIGHTUP else Diagonal.LEFTDOWN_RIGHTUP
             neighbors = self.get_neighbors(*next_node)
             for neighbor in neighbors:
                 if neighbor not in self.cross_dirs:
                     queue.append(neighbor)
-                    self.cross_dirs[neighbor] = new_polarity
-
-
+                    self.cross_dirs[neighbor] = new_polarity #if not self.is_blocking(*neighbor) else old_polarity
 
 
     def get_pixel(self, col, row):
@@ -174,9 +179,6 @@ class KnotWindow:
                 return True
         return False
 
-    def draw_coord_line(self, x1: int, y1: int, x2: int, y2: int):
-        pass
-
     def draw_init(self):
         lines_drawn = []
         for row in range(0, self.kp.rows):
@@ -227,14 +229,23 @@ class KnotWindow:
                                                                      fill=self.vp.line_color))
 
         # draw pattern
-        dis_length = 0
-        # while True:
-        #     pass
+        for i,lines in self.horizontal_blocks.items():
+            color = self.vp.primary_color if self.get_lane_type(i) == NodeType.PRIMARY else self.vp.secondary_color
+            for line in lines:
+                self.line_ids.append(self.canvas.create_line(*self.get_pixel(line[0], i), *self.get_pixel(line[1], i),
+                                                             width=self.vp.line_width/2,
+                                                             fill=color))
+        for i,lines in self.vertical_blocks.items():
+            color = self.vp.primary_color if self.get_lane_type(i) == NodeType.PRIMARY else self.vp.secondary_color
+            for line in lines:
+                self.line_ids.append(self.canvas.create_line(*self.get_pixel(i, line[0]), *self.get_pixel(i, line[1]),
+                                                             width=self.vp.line_width/2,
+                                                             fill=color))
 
 
 def main(name):
     no_dots = {"primary_color":None, "secondary_color":None}
-    kw = KnotWindow(vp=ViewParams(**no_dots))
+    kw = KnotWindow(vp=ViewParams())
 
 
 # Press the green button in the gutter to run the script.
