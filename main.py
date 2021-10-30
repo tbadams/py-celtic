@@ -4,6 +4,10 @@ from enum import Enum
 from typing import Optional
 from collections import deque
 
+TAG_DOT = 'dot'
+TAG_LINE = 'line'
+TAG_KNOT = 'knot'
+TAG_HELPER = 'helper'
 
 class NodeType(Enum):
     PRIMARY = 1
@@ -73,6 +77,7 @@ class KnotWindow:
     horizontal_blocks: dict = {}
     vertical_blocks: dict = {}
     cross_dirs = {}
+    helpers_hidden = True
 
     def __init__(self, kp: KnotParams = KnotParams(), vp: ViewParams = ViewParams()) -> None:
         super().__init__()
@@ -89,6 +94,8 @@ class KnotWindow:
         self.canvas = canvas
         canvas.pack()
         self.draw_init()
+        hide_helpers_button = tk.Button(window, text="Toggle Helpers", command=self.toggle_helpers)
+        hide_helpers_button.pack()
 
         window.mainloop()
 
@@ -180,6 +187,10 @@ class KnotWindow:
                 return True
         return False
 
+    def toggle_helpers(self):
+        self.helpers_hidden = not self.helpers_hidden
+        self.canvas.itemconfigure(TAG_HELPER, state='hidden' if self.helpers_hidden else 'normal')
+
     def draw_init(self):
         lines_drawn = []
         for row in range(0, self.kp.rows):
@@ -194,7 +205,7 @@ class KnotWindow:
                 else:
                     color = None  # self.vp.line_color
                 if color:
-                    dot_id = self.canvas.create_oval(x - dr, y - dr, x + dr, y + dr, outline=color, fill=color)
+                    dot_id = self.canvas.create_oval(x - dr, y - dr, x + dr, y + dr, outline=color, fill=color, state='hidden', tags=(TAG_DOT, TAG_HELPER ))
                     self.dot_ids[x, y] = dot_id
                 if nodetype is NodeType.LINE:
                     corners = self.get_corners(x, y)
@@ -231,29 +242,32 @@ class KnotWindow:
                                                                          width=self.vp.line_width,
                                                                          fill=self.vp.line_color))
                     else:
-                        pass
                         if self.is_blocking(col, row, Orientation.VERTICAL):
                             if CornerDirection.LEFTUP in corners and CornerDirection.LEFTDOWN in corners:
                                 self.line_ids.append(
                                     self.canvas.create_line(*corners[CornerDirection.LEFTUP], *corners[CornerDirection.LEFTDOWN],
+                                                            tags=(TAG_LINE, TAG_KNOT),
                                                             width=self.vp.line_width,
                                                             fill=self.vp.line_color))
                             if CornerDirection.RIGHTUP in corners and CornerDirection.RIGHTDOWN in corners:
                                 self.line_ids.append(
                                     self.canvas.create_line(*corners[CornerDirection.RIGHTUP],
                                                             *corners[CornerDirection.RIGHTDOWN],
+                                                            tags=(TAG_LINE, TAG_KNOT),
                                                             width=self.vp.line_width,
                                                             fill=self.vp.line_color))
                         elif self.is_blocking(col, row, Orientation.HORIZONTAL):
                             if CornerDirection.LEFTUP in corners and CornerDirection.RIGHTUP in corners:
                                 self.line_ids.append(
                                     self.canvas.create_line(*corners[CornerDirection.LEFTUP], *corners[CornerDirection.RIGHTUP],
+                                                            tags=(TAG_LINE, TAG_KNOT),
                                                             width=self.vp.line_width,
                                                             fill=self.vp.line_color))
                             if CornerDirection.LEFTDOWN in corners and CornerDirection.RIGHTDOWN in corners:
                                 self.line_ids.append(
                                     self.canvas.create_line(*corners[CornerDirection.LEFTDOWN],
                                                             *corners[CornerDirection.RIGHTDOWN],
+                                                            tags=(TAG_LINE, TAG_KNOT),
                                                             width=self.vp.line_width,
                                                             fill=self.vp.line_color))
         # draw pattern
@@ -262,6 +276,7 @@ class KnotWindow:
             if color:
                 for line in lines:
                     self.line_ids.append(self.canvas.create_line(*self.get_pixel(line[0], i), *self.get_pixel(line[1], i),
+                                                                 state='hidden', tags=(TAG_LINE, TAG_HELPER),
                                                                  width=self.vp.line_width/2,
                                                                  fill=color))
         for i,lines in self.vertical_blocks.items():
@@ -269,13 +284,14 @@ class KnotWindow:
             if color:
                 for line in lines:
                     self.line_ids.append(self.canvas.create_line(*self.get_pixel(i, line[0]), *self.get_pixel(i, line[1]),
+                                                                 state='hidden', tags=(TAG_LINE, TAG_HELPER),
                                                                  width=self.vp.line_width/2,
                                                                  fill=color))
 
 
 def main(name):
     no_dots = {"primary_color":None, "secondary_color":None}
-    kw = KnotWindow(vp=ViewParams(**no_dots))
+    kw = KnotWindow(vp=ViewParams())
 
 
 # Press the green button in the gutter to run the script.
