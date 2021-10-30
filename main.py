@@ -29,9 +29,9 @@ class CornerDirection(Enum):
 
 
 class Pattern:
-    vertical_lines = {}
-    horizontal_lines = {4:(2, 4)}
-    length = 4
+    vertical_lines = {3:[(1,3), (5,7)]}
+    horizontal_lines = {4:[(2, 4)]}
+    length = 6
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
@@ -107,9 +107,9 @@ class KnotWindow:
 
         # input
         for index in self.kp.pattern.vertical_lines:
-            self.vertical_blocks[index] = [self.kp.pattern.vertical_lines[index]]
+            self.vertical_blocks[index] = self.kp.pattern.vertical_lines[index]
         for index in self.kp.pattern.horizontal_lines:
-            self.horizontal_blocks[index] = [self.kp.pattern.horizontal_lines[index]]
+            self.horizontal_blocks[index] = self.kp.pattern.horizontal_lines[index]
 
         # setup crosses
         queue = deque()
