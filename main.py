@@ -291,7 +291,9 @@ class KnotWindow:
 
 def main(name):
     no_dots = {"primary_color":None, "secondary_color":None}
-    kw = KnotWindow(vp=ViewParams())
+    kpa = Pattern(  vertical_lines = {3:[(1,3), (5,7)]}, horizontal_lines = {4:[(2, 4)]}, length = 8)
+    kpb = Pattern(  vertical_lines = {3:[(1,3), (5,7)]}, horizontal_lines = {1:[(3,11)], 7:[(3,11)], 4:[(2, 4)]}, length = 8)
+    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(pattern=kpb))
 
 
 # Press the green button in the gutter to run the script.
