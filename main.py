@@ -272,6 +272,7 @@ class KnotWindow:
                         # normal two lines crossing
                         self.draw_lines_crossing(col, row)
                     else:
+                        #lines bounce off a block
                         if self.is_blocking(col, row, Orientation.VERTICAL):
                             if CornerDirection.LEFTUP in corners and CornerDirection.LEFTDOWN in corners:
                                     self.create_line(*corners[CornerDirection.LEFTUP], *corners[CornerDirection.LEFTDOWN])
@@ -284,7 +285,7 @@ class KnotWindow:
                             if CornerDirection.LEFTDOWN in corners and CornerDirection.RIGHTDOWN in corners:
                                     self.create_line(*corners[CornerDirection.LEFTDOWN],
                                                             *corners[CornerDirection.RIGHTDOWN])
-        # draw pattern
+        # draw blocking line helpers
         for i,lines in self.horizontal_blocks.items():
             for line in lines:
                 self.create_line(*self.get_pixel(line[0], i), *self.get_pixel(line[1], i),
