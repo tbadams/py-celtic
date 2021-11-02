@@ -67,8 +67,16 @@ class ViewParams:
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
-
         self.__dict__.update(kwargs)
+
+    def get_color(self, node_type:NodeType):
+        if node_type == NodeType.PRIMARY:
+            return self.primary_color
+        if node_type == NodeType.SECONDARY:
+            return self.secondary_color
+        if node_type == NodeType.LINE:
+            return self.line_color
+        raise ValueError('unknown node type {}'.format(node_type))
 
 
 class KnotWindow:
@@ -191,6 +199,57 @@ class KnotWindow:
         self.helpers_hidden = not self.helpers_hidden
         self.canvas.itemconfigure(TAG_HELPER, state='hidden' if self.helpers_hidden else 'normal')
 
+    def draw_lines_crossing(self, col, row):
+        x, y = self.get_pixel(col, row)
+        corners = self.get_corners(x, y)
+        for corner in corners.items():
+            corner_type = corner[0]
+            corner_coords = corner[1]
+            crossing_adjusted_x = x
+            crossing_adjusted_y = y
+            cross_direction = self.cross_dirs[(col, row)]
+            if not self.is_blocking(col, row):
+                if (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                    and corner_type == CornerDirection.LEFTUP) or \
+                        (cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                         and corner_type == CornerDirection.LEFTDOWN):
+                    crossing_adjusted_x = x - self.vp.crossing_gap_length
+                elif (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                      and corner_type == CornerDirection.RIGHTDOWN) or (
+                        cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                        and corner_type == CornerDirection.RIGHTUP):
+                    crossing_adjusted_x = x + self.vp.crossing_gap_length
+                if (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                    and corner_type == CornerDirection.LEFTUP) or \
+                        (cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                         and corner_type == CornerDirection.RIGHTUP):
+                    crossing_adjusted_y = y - self.vp.crossing_gap_length
+                elif (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
+                      and corner_type == CornerDirection.RIGHTDOWN) or (
+                        cross_direction == Diagonal.LEFTUP_RIGHTDOWN
+                        and corner_type == CornerDirection.LEFTDOWN):
+                    crossing_adjusted_y = y + self.vp.crossing_gap_length
+
+            self.create_line(crossing_adjusted_x, crossing_adjusted_y, *corner_coords)
+
+    def create_line(self, x1, y1, x2, y2, node_type:NodeType = NodeType.LINE, state=None, width:Optional[float] = None, color:str = None):
+        if color is None:
+            color = self.vp.get_color(node_type)
+        if width is None:
+            width = self.vp.line_width
+        if state is None:
+            state = 'normal' if node_type is NodeType.LINE else 'hidden'
+        if node_type is NodeType.LINE:
+            tags = (TAG_LINE, TAG_KNOT)
+        else:
+            tags = (TAG_LINE, TAG_HELPER)
+
+        self.line_ids.append(self.canvas.create_line(x1, y1, x2, y2,
+                                tags=tags,
+                                state=state,
+                                width=width,
+                                fill=color))
+
     def draw_init(self):
         lines_drawn = []
         for row in range(0, self.kp.rows):
@@ -210,83 +269,32 @@ class KnotWindow:
                 if nodetype is NodeType.LINE:
                     corners = self.get_corners(x, y)
                     if not self.is_blocking(col, row):
-                        for corner in corners.items():
-                            corner_type = corner[0]
-                            corner_coords = corner[1]
-                            crossing_adjusted_x = x
-                            crossing_adjusted_y = y
-                            cross_direction = self.cross_dirs[(col, row)]
-                            if not self.is_blocking(col, row):
-                                if (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
-                                    and corner_type == CornerDirection.LEFTUP) or \
-                                        (cross_direction == Diagonal.LEFTUP_RIGHTDOWN
-                                         and corner_type == CornerDirection.LEFTDOWN):
-                                    crossing_adjusted_x = x - self.vp.crossing_gap_length
-                                elif (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
-                                      and corner_type == CornerDirection.RIGHTDOWN) or (
-                                        cross_direction == Diagonal.LEFTUP_RIGHTDOWN
-                                        and corner_type == CornerDirection.RIGHTUP):
-                                    crossing_adjusted_x = x + self.vp.crossing_gap_length
-                                if (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
-                                    and corner_type == CornerDirection.LEFTUP) or \
-                                        (cross_direction == Diagonal.LEFTUP_RIGHTDOWN
-                                         and corner_type == CornerDirection.RIGHTUP):
-                                    crossing_adjusted_y = y - self.vp.crossing_gap_length
-                                elif (cross_direction == Diagonal.LEFTDOWN_RIGHTUP
-                                      and corner_type == CornerDirection.RIGHTDOWN) or (
-                                        cross_direction == Diagonal.LEFTUP_RIGHTDOWN
-                                        and corner_type == CornerDirection.LEFTDOWN):
-                                    crossing_adjusted_y = y + self.vp.crossing_gap_length
-
-                            self.line_ids.append(self.canvas.create_line(crossing_adjusted_x, crossing_adjusted_y, *corner_coords,
-                                                                         width=self.vp.line_width,
-                                                                         fill=self.vp.line_color))
+                        # normal two lines crossing
+                        self.draw_lines_crossing(col, row)
                     else:
                         if self.is_blocking(col, row, Orientation.VERTICAL):
                             if CornerDirection.LEFTUP in corners and CornerDirection.LEFTDOWN in corners:
-                                self.line_ids.append(
-                                    self.canvas.create_line(*corners[CornerDirection.LEFTUP], *corners[CornerDirection.LEFTDOWN],
-                                                            tags=(TAG_LINE, TAG_KNOT),
-                                                            width=self.vp.line_width,
-                                                            fill=self.vp.line_color))
+                                    self.create_line(*corners[CornerDirection.LEFTUP], *corners[CornerDirection.LEFTDOWN])
                             if CornerDirection.RIGHTUP in corners and CornerDirection.RIGHTDOWN in corners:
-                                self.line_ids.append(
-                                    self.canvas.create_line(*corners[CornerDirection.RIGHTUP],
-                                                            *corners[CornerDirection.RIGHTDOWN],
-                                                            tags=(TAG_LINE, TAG_KNOT),
-                                                            width=self.vp.line_width,
-                                                            fill=self.vp.line_color))
+                                    self.create_line(*corners[CornerDirection.RIGHTUP],
+                                                            *corners[CornerDirection.RIGHTDOWN])
                         elif self.is_blocking(col, row, Orientation.HORIZONTAL):
                             if CornerDirection.LEFTUP in corners and CornerDirection.RIGHTUP in corners:
-                                self.line_ids.append(
-                                    self.canvas.create_line(*corners[CornerDirection.LEFTUP], *corners[CornerDirection.RIGHTUP],
-                                                            tags=(TAG_LINE, TAG_KNOT),
-                                                            width=self.vp.line_width,
-                                                            fill=self.vp.line_color))
+                                    self.create_line(*corners[CornerDirection.LEFTUP], *corners[CornerDirection.RIGHTUP])
                             if CornerDirection.LEFTDOWN in corners and CornerDirection.RIGHTDOWN in corners:
-                                self.line_ids.append(
-                                    self.canvas.create_line(*corners[CornerDirection.LEFTDOWN],
-                                                            *corners[CornerDirection.RIGHTDOWN],
-                                                            tags=(TAG_LINE, TAG_KNOT),
-                                                            width=self.vp.line_width,
-                                                            fill=self.vp.line_color))
+                                    self.create_line(*corners[CornerDirection.LEFTDOWN],
+                                                            *corners[CornerDirection.RIGHTDOWN])
         # draw pattern
         for i,lines in self.horizontal_blocks.items():
-            color = self.vp.primary_color if self.get_lane_type(i) == NodeType.PRIMARY else self.vp.secondary_color
-            if color:
-                for line in lines:
-                    self.line_ids.append(self.canvas.create_line(*self.get_pixel(line[0], i), *self.get_pixel(line[1], i),
-                                                                 state='hidden', tags=(TAG_LINE, TAG_HELPER),
-                                                                 width=self.vp.line_width/2,
-                                                                 fill=color))
+            for line in lines:
+                self.create_line(*self.get_pixel(line[0], i), *self.get_pixel(line[1], i),
+                                                             self.get_lane_type(i),
+                                                             width=self.vp.line_width/2)
         for i,lines in self.vertical_blocks.items():
-            color = self.vp.primary_color if self.get_lane_type(i) == NodeType.PRIMARY else self.vp.secondary_color
-            if color:
-                for line in lines:
-                    self.line_ids.append(self.canvas.create_line(*self.get_pixel(i, line[0]), *self.get_pixel(i, line[1]),
-                                                                 state='hidden', tags=(TAG_LINE, TAG_HELPER),
-                                                                 width=self.vp.line_width/2,
-                                                                 fill=color))
+            for line in lines:
+                self.create_line(*self.get_pixel(i, line[0]), *self.get_pixel(i, line[1]),
+                                                            self.get_lane_type(i),
+                                                             width=self.vp.line_width/2)
 
 
 def main(name):
