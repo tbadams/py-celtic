@@ -4,6 +4,9 @@ from enum import Enum
 from typing import Optional
 from collections import deque
 
+
+# https://tkdocs.com/tutorial/canvas.html#tags
+
 TAG_DOT = 'dot'
 TAG_LINE = 'line'
 TAG_KNOT = 'knot'
