@@ -332,7 +332,13 @@ def main(name):
     kpa = Pattern(  vertical_lines = {3:[(1,3), (5,7)]}, horizontal_lines = {4:[(2, 4)]}, length = 8)
     kpb = Pattern(  vertical_lines = {3:[(1,3), (5,7)]}, horizontal_lines = {1:[(3,11)], 7:[(3,11)], 4:[(2, 4)]}, length = 8)
     kpc = Pattern(  vertical_lines = {3:[(1,3), (5,7)], 6:[(2,6)], 7:[(3,5)], 8:[(2,6)]}, horizontal_lines = {4:[(2, 4)]}, length = 8)
-    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(pattern=kpc))
+    skpa = Pattern(vertical_lines={1:[(1,3)], 5:[(1,3)]})
+    skpb = Pattern(vertical_lines={1:[(1,3)], 5:[(1,3)], 9:[(1,3)], 10:[(0,2)],12:[(2,4)], 13:[(1,3)]}, horizontal_lines={1:[(13,15)], 2:[(6,8)], 3:[(15,17)]}, length=16)
+    skpc = Pattern(vertical_lines={1: [(1, 3)], 5: [(1, 3)]},
+                   horizontal_lines={1: [(5, 7)], 3: [(7,9)]}, length=8)
+    skpd = Pattern(vertical_lines={1: [(1, 3)]},
+                   horizontal_lines={1:[(7,9)], 3: [(7,9)], 2:[(4,6)]}, length=8)
+    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(rows=5, pattern=skpd))
 
 
 # Press the green button in the gutter to run the script.
