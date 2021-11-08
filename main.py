@@ -4,7 +4,6 @@ from enum import Enum
 from typing import Optional
 from collections import deque
 
-
 # https://tkdocs.com/tutorial/canvas.html#tags
 
 TAG_DOT = 'dot'
@@ -12,10 +11,23 @@ TAG_LINE = 'line'
 TAG_KNOT = 'knot'
 TAG_HELPER = 'helper'
 
+
 class NodeType(Enum):
     PRIMARY = 1
     SECONDARY = 2
     LINE = 3
+
+
+def get_node_type(col, row):
+    if row % 2 == 0 and col % 2 == 0:
+        return NodeType.PRIMARY
+    elif row % 2 == 1 and col % 2 == 1:
+        return NodeType.SECONDARY
+    return NodeType.LINE
+
+
+def get_lane_type(index: int):
+    return NodeType.PRIMARY if index % 2 == 0 else NodeType.SECONDARY
 
 
 class Orientation(Enum):
@@ -35,6 +47,16 @@ class CornerDirection(Enum):
     LEFTDOWN = 4
 
 
+class Block:
+
+    def __init__(self, orientation: Orientation, index: int, start: int, end: int, block_type: NodeType) -> None:
+        self.orientation = orientation
+        self.index = index
+        self.start = start
+        self.end = end
+        self.block_type = block_type
+
+
 class Pattern:
     vertical_lines = {}
     horizontal_lines = {}
@@ -46,14 +68,17 @@ class Pattern:
 
         self.__dict__.update(kwargs)
 
-    def lines_for_orientation(self, orientation:Orientation):
+    def lines_for_orientation(self, orientation: Orientation):
         return self.horizontal_lines if orientation is Orientation.HORIZONTAL else self.vertical_lines
 
-    def add(self, index:int, orientation:Orientation, line):
+    def add(self, index: int, orientation: Orientation, line):
         # TODO merge lines somehow
         self.lines_for_orientation(orientation)[index].append(line)
 
-    def append(self, pattern, orientation:Orientation = Orientation.VERTICAL):
+    def add_line(self, line):
+        self.add(line.index, line.orientation, (line.start, line.end))
+
+    def append(self, pattern, orientation: Orientation = Orientation.VERTICAL):
         startx = 0
         starty = 0
         if (orientation is Orientation.VERTICAL):
@@ -69,7 +94,6 @@ class Pattern:
         for col, lines in pattern.horizontal_lines.items:
             for line in lines:
                 self.horizontal_lines[col + startx].append((line[0] + starty, line[1] + starty))
-
 
 
 class KnotParams:
@@ -98,7 +122,7 @@ class ViewParams:
         super().__init__()
         self.__dict__.update(kwargs)
 
-    def get_color(self, node_type:NodeType):
+    def get_color(self, node_type: NodeType):
         if node_type == NodeType.PRIMARY:
             return self.primary_color
         if node_type == NodeType.SECONDARY:
@@ -158,10 +182,10 @@ class KnotWindow:
         while start_index < self.kp.cols:
             for pattern in self.kp.patterns:
                 for col in self.kp.pattern.vertical_lines:
-                    self.vertical_blocks[col+start_index] = self.kp.pattern.vertical_lines[col]
+                    self.vertical_blocks[col + start_index] = self.kp.pattern.vertical_lines[col]
                 for row in self.kp.pattern.horizontal_lines:
                     for blocker in self.kp.pattern.horizontal_lines[row]:
-                        self.horizontal_blocks[row].append((blocker[0]+start_index, blocker[1]+start_index))
+                        self.horizontal_blocks[row].append((blocker[0] + start_index, blocker[1] + start_index))
                 start_index += pattern.length
 
         # setup crosses
@@ -172,13 +196,12 @@ class KnotWindow:
         while queue:
             next_node = queue.popleft()
             old_polarity = self.cross_dirs[next_node]
-            new_polarity = Diagonal.LEFTUP_RIGHTDOWN if old_polarity==Diagonal.LEFTDOWN_RIGHTUP else Diagonal.LEFTDOWN_RIGHTUP
+            new_polarity = Diagonal.LEFTUP_RIGHTDOWN if old_polarity == Diagonal.LEFTDOWN_RIGHTUP else Diagonal.LEFTDOWN_RIGHTUP
             neighbors = self.get_neighbors(*next_node)
             for neighbor in neighbors:
                 if neighbor not in self.cross_dirs:
                     queue.append(neighbor)
-                    self.cross_dirs[neighbor] = new_polarity #if not self.is_blocking(*neighbor) else old_polarity
-
+                    self.cross_dirs[neighbor] = new_polarity  # if not self.is_blocking(*neighbor) else old_polarity
 
     def get_pixel(self, col, row):
         return self.vp.x_padding + (col * self.vp.unit_length), self.vp.y_padding + (row * self.vp.unit_length)
@@ -192,41 +215,33 @@ class KnotWindow:
     def by_primary_index(self, col, row):
         pass
 
-    def get_node_type(self, col, row):
-        if row % 2 == 0 and col % 2 == 0:
-            return NodeType.PRIMARY
-        elif row % 2 == 1 and col % 2 == 1:
-            return NodeType.SECONDARY
-        return NodeType.LINE
-
-    def get_lane_type(self, index: int):
-        return NodeType.PRIMARY if index % 2 == 0 else NodeType.SECONDARY
-
     def get_neighbors(self, col, row):
         out = [(col - 1, row - 1), (col + 1, row - 1), (col + 1, row + 1), (col - 1, row + 1)]
         return filter(
-            lambda coord: 0 <= coord[0] < self.kp.cols  and 0 <= coord[1] < self.kp.rows, out)
+            lambda coord: 0 <= coord[0] < self.kp.cols and 0 <= coord[1] < self.kp.rows, out)
 
     def get_corners(self, x, y):
         half_unit = self.vp.unit_length / 2
-        out:dict = {CornerDirection.LEFTUP: (x - half_unit, y - half_unit),
-               CornerDirection.RIGHTUP: (x + half_unit, y - half_unit),
-               CornerDirection.RIGHTDOWN: (x + half_unit, y + half_unit),
-               CornerDirection.LEFTDOWN: (x - half_unit, y + half_unit)}
-        return dict(filter(lambda coord: 0 <= coord[1][0] < self.max_x() and 0 <= coord[1][1] < self.max_y(), out.items()))
+        out: dict = {CornerDirection.LEFTUP: (x - half_unit, y - half_unit),
+                     CornerDirection.RIGHTUP: (x + half_unit, y - half_unit),
+                     CornerDirection.RIGHTDOWN: (x + half_unit, y + half_unit),
+                     CornerDirection.LEFTDOWN: (x - half_unit, y + half_unit)}
+        return dict(
+            filter(lambda coord: 0 <= coord[1][0] < self.max_x() and 0 <= coord[1][1] < self.max_y(), out.items()))
 
-    def is_blocking(self, col, row, orientation:Optional[Orientation] = None):
+    def is_blocking(self, col, row, orientation: Optional[Orientation] = None):
         if not orientation:
-            return self.is_blocking(col, row, Orientation.HORIZONTAL) or self.is_blocking(col, row, Orientation.VERTICAL)
+            return self.is_blocking(col, row, Orientation.HORIZONTAL) or self.is_blocking(col, row,
+                                                                                          Orientation.VERTICAL)
         if orientation == Orientation.HORIZONTAL:
             blocks = self.horizontal_blocks[row]
-            lane_index:int = col
+            lane_index: int = col
         else:
             blocks = self.vertical_blocks[col]
-            lane_index:int = row
+            lane_index: int = row
         for block in blocks:
-            block_start:int = block[0]
-            block_end:int = block[1]
+            block_start: int = block[0]
+            block_end: int = block[1]
             if block_start <= lane_index <= block_end:
                 return True
         return False
@@ -268,7 +283,8 @@ class KnotWindow:
 
             self.create_line(crossing_adjusted_x, crossing_adjusted_y, *corner_coords)
 
-    def create_line(self, x1, y1, x2, y2, node_type:NodeType = NodeType.LINE, state=None, width:Optional[float] = None, color:str = None):
+    def create_line(self, x1, y1, x2, y2, node_type: NodeType = NodeType.LINE, state=None,
+                    width: Optional[float] = None, color: str = None):
         if color is None:
             color = self.vp.get_color(node_type)
         if width is None:
@@ -281,10 +297,10 @@ class KnotWindow:
             tags = (TAG_LINE, TAG_HELPER)
 
         self.line_ids.append(self.canvas.create_line(x1, y1, x2, y2,
-                                tags=tags,
-                                state=state,
-                                width=width,
-                                fill=color))
+                                                     tags=tags,
+                                                     state=state,
+                                                     width=width,
+                                                     fill=color))
 
     def draw_init(self):
         lines_drawn = []
@@ -292,7 +308,7 @@ class KnotWindow:
             for col in range(0, self.kp.cols):
                 x, y = self.get_pixel(col, row)
                 dr = self.vp.dot_radius
-                nodetype = self.get_node_type(col, row)
+                nodetype = get_node_type(col, row)
                 if nodetype is NodeType.PRIMARY:
                     color = self.vp.primary_color
                 elif nodetype is NodeType.SECONDARY:
@@ -300,7 +316,8 @@ class KnotWindow:
                 else:
                     color = None  # self.vp.line_color
                 if color:
-                    dot_id = self.canvas.create_oval(x - dr, y - dr, x + dr, y + dr, outline=color, fill=color, state='hidden', tags=(TAG_DOT, TAG_HELPER ))
+                    dot_id = self.canvas.create_oval(x - dr, y - dr, x + dr, y + dr, outline=color, fill=color,
+                                                     state='hidden', tags=(TAG_DOT, TAG_HELPER))
                     self.dot_ids[x, y] = dot_id
                 if nodetype is NodeType.LINE:
                     corners = self.get_corners(x, y)
@@ -308,43 +325,46 @@ class KnotWindow:
                         # normal two lines crossing
                         self.draw_lines_crossing(col, row)
                     else:
-                        #lines bounce off a block
+                        # lines bounce off a block
                         if self.is_blocking(col, row, Orientation.VERTICAL):
                             if CornerDirection.LEFTUP in corners and CornerDirection.LEFTDOWN in corners:
-                                    self.create_line(*corners[CornerDirection.LEFTUP], *corners[CornerDirection.LEFTDOWN])
+                                self.create_line(*corners[CornerDirection.LEFTUP], *corners[CornerDirection.LEFTDOWN])
                             if CornerDirection.RIGHTUP in corners and CornerDirection.RIGHTDOWN in corners:
-                                    self.create_line(*corners[CornerDirection.RIGHTUP],
-                                                            *corners[CornerDirection.RIGHTDOWN])
+                                self.create_line(*corners[CornerDirection.RIGHTUP],
+                                                 *corners[CornerDirection.RIGHTDOWN])
                         elif self.is_blocking(col, row, Orientation.HORIZONTAL):
                             if CornerDirection.LEFTUP in corners and CornerDirection.RIGHTUP in corners:
-                                    self.create_line(*corners[CornerDirection.LEFTUP], *corners[CornerDirection.RIGHTUP])
+                                self.create_line(*corners[CornerDirection.LEFTUP], *corners[CornerDirection.RIGHTUP])
                             if CornerDirection.LEFTDOWN in corners and CornerDirection.RIGHTDOWN in corners:
-                                    self.create_line(*corners[CornerDirection.LEFTDOWN],
-                                                            *corners[CornerDirection.RIGHTDOWN])
+                                self.create_line(*corners[CornerDirection.LEFTDOWN],
+                                                 *corners[CornerDirection.RIGHTDOWN])
         # draw blocking line helpers
-        for i,lines in self.horizontal_blocks.items():
+        for i, lines in self.horizontal_blocks.items():
             for line in lines:
                 self.create_line(*self.get_pixel(line[0], i), *self.get_pixel(line[1], i),
-                                                             self.get_lane_type(i),
-                                                             width=self.vp.line_width/2)
-        for i,lines in self.vertical_blocks.items():
+                                 get_lane_type(i),
+                                 width=self.vp.line_width / 2)
+        for i, lines in self.vertical_blocks.items():
             for line in lines:
                 self.create_line(*self.get_pixel(i, line[0]), *self.get_pixel(i, line[1]),
-                                                            self.get_lane_type(i),
-                                                             width=self.vp.line_width/2)
+                                 get_lane_type(i),
+                                 width=self.vp.line_width / 2)
 
 
 def main(name):
-    no_dots = {"primary_color":None, "secondary_color":None}
-    kpa = Pattern(  vertical_lines = {3:[(1,3), (5,7)]}, horizontal_lines = {4:[(2, 4)]}, length = 8)
-    kpb = Pattern(  vertical_lines = {3:[(1,3), (5,7)]}, horizontal_lines = {1:[(3,11)], 7:[(3,11)], 4:[(2, 4)]}, length = 8)
-    kpc = Pattern(  vertical_lines = {3:[(1,3), (5,7)], 6:[(2,6)], 7:[(3,5)], 8:[(2,6)]}, horizontal_lines = {4:[(2, 4)]}, length = 8)
-    skpa = Pattern(vertical_lines={1:[(1,3)], 5:[(1,3)]})
-    skpb = Pattern(vertical_lines={1:[(1,3)], 5:[(1,3)], 9:[(1,3)], 10:[(0,2)],12:[(2,4)], 13:[(1,3)]}, horizontal_lines={1:[(13,15)], 2:[(6,8)], 3:[(15,17)]}, length=16)
+    no_dots = {"primary_color": None, "secondary_color": None}
+    kpa = Pattern(vertical_lines={3: [(1, 3), (5, 7)]}, horizontal_lines={4: [(2, 4)]}, length=8)
+    kpb = Pattern(vertical_lines={3: [(1, 3), (5, 7)]}, horizontal_lines={1: [(3, 11)], 7: [(3, 11)], 4: [(2, 4)]},
+                  length=8)
+    kpc = Pattern(vertical_lines={3: [(1, 3), (5, 7)], 6: [(2, 6)], 7: [(3, 5)], 8: [(2, 6)]},
+                  horizontal_lines={4: [(2, 4)]}, length=8)
+    skpa = Pattern(vertical_lines={1: [(1, 3)], 5: [(1, 3)]})
+    skpb = Pattern(vertical_lines={1: [(1, 3)], 5: [(1, 3)], 9: [(1, 3)], 10: [(0, 2)], 12: [(2, 4)], 13: [(1, 3)]},
+                   horizontal_lines={1: [(13, 15)], 2: [(6, 8)], 3: [(15, 17)]}, length=16)
     skpc = Pattern(vertical_lines={1: [(1, 3)], 5: [(1, 3)]},
-                   horizontal_lines={1: [(5, 7)], 3: [(7,9)]}, length=8)
+                   horizontal_lines={1: [(5, 7)], 3: [(7, 9)]}, length=8)
     skpd = Pattern(vertical_lines={1: [(1, 3)]},
-                   horizontal_lines={1:[(7,9)], 3: [(7,9)], 2:[(4,6)]}, length=8)
+                   horizontal_lines={1: [(7, 9)], 3: [(7, 9)], 2: [(4, 6)]}, length=8)
     kw = KnotWindow(vp=ViewParams(), kp=KnotParams(rows=5, pattern=skpd))
 
 
