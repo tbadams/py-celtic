@@ -131,7 +131,7 @@ class KnotWindow:
         self.canvas = canvas
         canvas.pack()
         self.draw_init()
-        hide_helpers_button = tk.Button(window, text="Toggle Helpers", command=self.toggle_helpers)
+        hide_helpers_button = tk.Button(window, text="Toggle (H)elpers", command=self.toggle_helpers)
         hide_helpers_button.pack()
 
         # Hotkeys
