@@ -49,12 +49,21 @@ class CornerDirection(Enum):
 
 class Block:
 
-    def __init__(self, orientation: Orientation, index: int, start: int, end: int, block_type: NodeType) -> None:
+    def __init__(self, orientation: Orientation, index: int, start: int, end: int) -> None:
         self.orientation = orientation
         self.index = index
         self.start = start
         self.end = end
-        self.block_type = block_type
+
+        #determine blocker type
+        start_coords = (index, start) if orientation is Orientation.VERTICAL else (start, index)
+        end_coords = (index, end) if orientation is Orientation.VERTICAL else (end, index)
+        start_type = get_node_type(*start_coords)
+        end_type = get_node_type(*end_coords)
+        if start_type == end_type and start_type is not NodeType.LINE:
+            self.block_type = start_type
+        else:
+            raise ValueError("illegal blocking line {} ({}) to {} ({})".format(str(start_coords), str(start_type), str(end_coords), str(end_type)))
 
 
 class Pattern:
@@ -67,6 +76,8 @@ class Pattern:
         super().__init__()
 
         self.__dict__.update(kwargs)
+        for line in lines:
+            self.add_block(line)
 
     def lines_for_orientation(self, orientation: Orientation):
         return self.horizontal_lines if orientation is Orientation.HORIZONTAL else self.vertical_lines
@@ -75,7 +86,7 @@ class Pattern:
         # TODO merge lines somehow
         self.lines_for_orientation(orientation)[index].append(line)
 
-    def add_line(self, line):
+    def add_block(self, line):
         self.add(line.index, line.orientation, (line.start, line.end))
 
     def append(self, pattern, orientation: Orientation = Orientation.VERTICAL):
@@ -101,10 +112,12 @@ class KnotParams:
     cols = 33
     patterns = [Pattern()]
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, *patterns, **kwargs) -> None:
         super().__init__()
 
         self.__dict__.update(kwargs)
+        if patterns:
+            self.patterns = patterns
 
 
 class ViewParams:
@@ -181,10 +194,10 @@ class KnotWindow:
         start_index = 0
         while start_index < self.kp.cols:
             for pattern in self.kp.patterns:
-                for col in self.kp.pattern.vertical_lines:
-                    self.vertical_blocks[col + start_index] = self.kp.pattern.vertical_lines[col]
-                for row in self.kp.pattern.horizontal_lines:
-                    for blocker in self.kp.pattern.horizontal_lines[row]:
+                for col in pattern.vertical_lines:
+                    self.vertical_blocks[col + start_index] = pattern.vertical_lines[col]
+                for row in pattern.horizontal_lines:
+                    for blocker in pattern.horizontal_lines[row]:
                         self.horizontal_blocks[row].append((blocker[0] + start_index, blocker[1] + start_index))
                 start_index += pattern.length
 
@@ -365,7 +378,8 @@ def main(name):
                    horizontal_lines={1: [(5, 7)], 3: [(7, 9)]}, length=8)
     skpd = Pattern(vertical_lines={1: [(1, 3)]},
                    horizontal_lines={1: [(7, 9)], 3: [(7, 9)], 2: [(4, 6)]}, length=8)
-    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(rows=5, pattern=skpd))
+    lines = Pattern()
+    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(skpd, rows=5))
 
 
 # Press the green button in the gutter to run the script.
