@@ -36,14 +36,40 @@ class CornerDirection(Enum):
 
 
 class Pattern:
-    vertical_lines = {3:[(1,3), (5,7)]}
-    horizontal_lines = {4:[(2, 4)]}
+    vertical_lines = {}
+    horizontal_lines = {}
     length = 8
+    height = 9
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
 
         self.__dict__.update(kwargs)
+
+    def lines_for_orientation(self, orientation:Orientation):
+        return self.horizontal_lines if orientation is Orientation.HORIZONTAL else self.vertical_lines
+
+    def add(self, index:int, orientation:Orientation, line):
+        # TODO merge lines somehow
+        self.lines_for_orientation(orientation)[index].append(line)
+
+    def append(self, pattern, orientation:Orientation = Orientation.VERTICAL):
+        startx = 0
+        starty = 0
+        if (orientation is Orientation.VERTICAL):
+            startx = self.length + 1
+            self.length += pattern.length
+        else:
+            starty = self.height + 1
+            self.height = pattern.height
+
+        for row, lines in pattern.horizontal_lines.items:
+            for line in lines:
+                self.horizontal_lines[row + starty].append((line[0] + startx, line[1] + startx))
+        for col, lines in pattern.horizontal_lines.items:
+            for line in lines:
+                self.horizontal_lines[col + startx].append((line[0] + starty, line[1] + starty))
+
 
 
 class KnotParams:
