@@ -41,7 +41,7 @@ class Pattern:
     length = 8
     height = 9
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, *lines, **kwargs) -> None:
         super().__init__()
 
         self.__dict__.update(kwargs)
@@ -75,7 +75,7 @@ class Pattern:
 class KnotParams:
     rows = 9
     cols = 33
-    pattern = Pattern()
+    patterns = [Pattern()]
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
@@ -134,6 +134,10 @@ class KnotWindow:
         hide_helpers_button = tk.Button(window, text="Toggle Helpers", command=self.toggle_helpers)
         hide_helpers_button.pack()
 
+        # Hotkeys
+        window.bind('h', lambda e: self.toggle_helpers())
+        window.bind('H', lambda e: self.toggle_helpers())
+
         window.mainloop()
 
     def setup_blocks(self):
@@ -150,12 +154,15 @@ class KnotWindow:
         self.horizontal_blocks[self.kp.rows - 1].append((0, self.kp.cols - 1))
 
         # input
-        for j in range(0,self.kp.cols, self.kp.pattern.length):
-            for index in self.kp.pattern.vertical_lines:
-                self.vertical_blocks[index+j] = self.kp.pattern.vertical_lines[index]
-            for index in self.kp.pattern.horizontal_lines:
-                for blocker in self.kp.pattern.horizontal_lines[index]:
-                    self.horizontal_blocks[index].append((blocker[0]+j, blocker[1]+j))
+        start_index = 0
+        while start_index < self.kp.cols:
+            for pattern in self.kp.patterns:
+                for col in self.kp.pattern.vertical_lines:
+                    self.vertical_blocks[col+start_index] = self.kp.pattern.vertical_lines[col]
+                for row in self.kp.pattern.horizontal_lines:
+                    for blocker in self.kp.pattern.horizontal_lines[row]:
+                        self.horizontal_blocks[row].append((blocker[0]+start_index, blocker[1]+start_index))
+                start_index += pattern.length
 
         # setup crosses
         queue = deque()
