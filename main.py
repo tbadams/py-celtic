@@ -95,10 +95,10 @@ class Pattern(PatternInterface):
     def add_block(self, line):
         self.add(line.index, line.orientation, (line.start, line.end))
 
-    def append(self, pattern, orientation: Orientation = Orientation.VERTICAL):
+    def append(self, pattern, orientation: Orientation = Orientation.HORIZONTAL):
         startx = 0
         starty = 0
-        if (orientation is Orientation.VERTICAL):
+        if (orientation is Orientation.HORIZONTAL):
             startx = self.length + 1
             self.length += pattern.length
         else:
@@ -112,8 +112,11 @@ class Pattern(PatternInterface):
             for line in lines:
                 self.horizontal_lines[col + startx].append((line[0] + starty, line[1] + starty))
 
-class PatternGroup(PatternInterface):
-    pass
+class HorizontalPatternGroup(PatternInterface):
+
+    def __init__(self, *patterns) -> None:
+        super().__init__()
+        self.patterns = patterns
 
 
 # class PatternGroup:
