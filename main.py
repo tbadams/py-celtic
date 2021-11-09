@@ -66,15 +66,18 @@ class Block:
             raise ValueError("illegal blocking line {} ({}) to {} ({})".format(str(start_coords), str(start_type), str(end_coords), str(end_type)))
 
 
-class Pattern:
-    vertical_lines = {}
-    horizontal_lines = {}
+class PatternInterface:
+    pass
+
+class Pattern(PatternInterface):
+
     length = 8
     height = 9
 
     def __init__(self, *lines, **kwargs) -> None:
         super().__init__()
-
+        self.vertical_lines = {}
+        self.horizontal_lines = {}
         self.__dict__.update(kwargs)
         for line in lines:
             self.add_block(line)
@@ -84,6 +87,9 @@ class Pattern:
 
     def add(self, index: int, orientation: Orientation, line):
         # TODO merge lines somehow
+        lines = self.lines_for_orientation(orientation)
+        if index not in lines:
+            lines[index] = []
         self.lines_for_orientation(orientation)[index].append(line)
 
     def add_block(self, line):
@@ -106,11 +112,25 @@ class Pattern:
             for line in lines:
                 self.horizontal_lines[col + startx].append((line[0] + starty, line[1] + starty))
 
+class PatternGroup(PatternInterface):
+    pass
+
+
+# class PatternGroup:
+#     thresholds = {}
+#
+#     def __init__(self, *patterns) -> None:
+#         super().__init__()
+#         for pattern in patterns:
+#
+
+
+
+
 
 class KnotParams:
     rows = 9
     cols = 33
-    patterns = [Pattern()]
 
     def __init__(self, *patterns, **kwargs) -> None:
         super().__init__()
@@ -118,6 +138,8 @@ class KnotParams:
         self.__dict__.update(kwargs)
         if patterns:
             self.patterns = patterns
+        else:
+            self.patterns = [Pattern()]
 
 
 class ViewParams:
@@ -378,8 +400,9 @@ def main(name):
                    horizontal_lines={1: [(5, 7)], 3: [(7, 9)]}, length=8)
     skpd = Pattern(vertical_lines={1: [(1, 3)]},
                    horizontal_lines={1: [(7, 9)], 3: [(7, 9)], 2: [(4, 6)]}, length=8)
-    lines = Pattern()
-    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(skpd, rows=5))
+    p1 = Pattern(Block(Orientation.VERTICAL, 1, 1, 3), length=2)
+    p2 = Pattern(Block(Orientation.VERTICAL, 3, 1, 3), length=4)
+    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(p1, p2, rows=5))
 
 
 # Press the green button in the gutter to run the script.
