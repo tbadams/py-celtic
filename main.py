@@ -3,6 +3,7 @@ from tkinter import ttk
 from enum import Enum
 from typing import Optional
 from collections import deque
+import copy
 
 # https://tkdocs.com/tutorial/canvas.html#tags
 
@@ -56,18 +57,46 @@ class Block:
         self.end = end
 
         #determine blocker type
-        start_coords = (index, start) if orientation is Orientation.VERTICAL else (start, index)
-        end_coords = (index, end) if orientation is Orientation.VERTICAL else (end, index)
-        start_type = get_node_type(*start_coords)
-        end_type = get_node_type(*end_coords)
+        start_type = get_node_type(*self.start_coords())
+        end_type = get_node_type(*self.end_coords())
         if start_type == end_type and start_type is not NodeType.LINE:
             self.block_type = start_type
         else:
-            raise ValueError("illegal blocking line {} ({}) to {} ({})".format(str(start_coords), str(start_type), str(end_coords), str(end_type)))
+            raise ValueError("illegal blocking line {} ({}) to {} ({})".format(str(self.start_coords()), str(start_type), str(self.end_coords()), str(end_type)))
 
+    def start_coords(self):
+        return (self.index, self.start) if self.orientation is Orientation.VERTICAL else (self.start, self.index)
+
+    def end_coords(self):
+        return (self.index, self.end) if self.orientation is Orientation.VERTICAL else (self.end, self.index)
+
+    def invert(self, length:int, orientation:Orientation = Orientation.HORIZONTAL):
+        if orientation is Orientation.HORIZONTAL:
+            if self.orientation is Orientation.VERTICAL:
+                return Block(self.orientation, length - self.index, self.start, self.end)
+            else:
+                return Block(self.orientation, self.index, length- self.end, length - self.start)
+        else:
+            raise NotImplementedError("you're killing me")
 
 class PatternInterface:
-    pass
+
+    def get_length(self): raise NotImplementedError("please stop this")
+
+    def add_block(self, line): raise NotImplementedError("cmon cmon")
+
+    def append(self, pattern, orientation: Orientation = Orientation.HORIZONTAL):
+        raise NotImplementedError("super super")
+
+    def repeat(self, times:int, orientation = Orientation.HORIZONTAL):
+        out = []
+        for i in range(times):
+            out.append(copy.deepcopy(self))
+        return out
+            # self.append(copy.deepcopy(self), orientation)
+
+    def get_lines(self):
+        raise NotImplementedError("no")
 
 class Pattern(PatternInterface):
 
@@ -81,6 +110,9 @@ class Pattern(PatternInterface):
         self.__dict__.update(kwargs)
         for line in lines:
             self.add_block(line)
+
+    def get_length(self): return self.length
+    def get_height(self): return self.height
 
     def lines_for_orientation(self, orientation: Orientation):
         return self.horizontal_lines if orientation is Orientation.HORIZONTAL else self.vertical_lines
@@ -105,12 +137,31 @@ class Pattern(PatternInterface):
             starty = self.height + 1
             self.height = pattern.height
 
-        for row, lines in pattern.horizontal_lines.items:
+        for line in self.get_lines():
+            index_offset = startx if line.orientation is Orientation.VERTICAL else starty
+            line_offset = starty if line.orientation is Orientation.VERTICAL else startx
+            self.add_block(Block(line.orientation, line.index + index_offset, line.start + line_offset, line.end + line_offset))
+
+        for row, lines in pattern.vertical_lines.items():
             for line in lines:
-                self.horizontal_lines[row + starty].append((line[0] + startx, line[1] + startx))
-        for col, lines in pattern.horizontal_lines.items:
+                self.vertical_lines[row + starty].append((line[0] + startx, line[1] + startx))
+        for col, lines in pattern.horizontal_lines.items():
             for line in lines:
                 self.horizontal_lines[col + startx].append((line[0] + starty, line[1] + starty))
+
+    def get_lines(self):
+        out = []
+        for col, lines in self.vertical_lines.items():
+            for line in lines:
+                out.append(Block(Orientation.VERTICAL, col, line[0], line[1]))
+        for row, lines in self.horizontal_lines.items():
+            for line in lines:
+                out.append(Block(Orientation.HORIZONTAL, row, line[0], line[1]))
+        return out
+
+    def invert(self, orientation:Orientation = Orientation.HORIZONTAL):
+        return Pattern(*list(map(lambda line: line.invert(self.get_length(), orientation), self.get_lines())))
+
 
 class HorizontalPatternGroup(PatternInterface):
 
@@ -219,12 +270,13 @@ class KnotWindow:
         start_index = 0
         while start_index < self.kp.cols:
             for pattern in self.kp.patterns:
-                for col in pattern.vertical_lines:
-                    self.vertical_blocks[col + start_index] = pattern.vertical_lines[col]
-                for row in pattern.horizontal_lines:
-                    for blocker in pattern.horizontal_lines[row]:
-                        self.horizontal_blocks[row].append((blocker[0] + start_index, blocker[1] + start_index))
-                start_index += pattern.length
+                if pattern: # TODO fix
+                    for col in pattern.vertical_lines:
+                        self.vertical_blocks[col + start_index] = pattern.vertical_lines[col]
+                    for row in pattern.horizontal_lines:
+                        for blocker in pattern.horizontal_lines[row]:
+                            self.horizontal_blocks[row].append((blocker[0] + start_index, blocker[1] + start_index))
+                    start_index += pattern.length
 
         # setup crosses
         queue = deque()
@@ -405,7 +457,7 @@ def main(name):
                    horizontal_lines={1: [(7, 9)], 3: [(7, 9)], 2: [(4, 6)]}, length=8)
     p1 = Pattern(Block(Orientation.VERTICAL, 1, 1, 3), length=2)
     p2 = Pattern(Block(Orientation.VERTICAL, 3, 1, 3), length=4)
-    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(p1, p2, rows=5))
+    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(p1, *p2.repeat(8), p1.invert(), rows=5))
 
 
 # Press the green button in the gutter to run the script.
