@@ -85,6 +85,16 @@ class Block:
     #
     # def repeat(self, offset, orientation:Orientation = Orientation.HORIZONTAL):
 
+class VBlock(Block):
+    def __init__(self, index: int, start: int, end: int) -> None:
+        super().__init__(Orientation.VERTICAL, index, start, end)
+
+class HBlock(Block):
+
+    def __init__(self, index: int, start: int, end: int) -> None:
+        super().__init__(Orientation.HORIZONTAL, index, start, end)
+
+
 class PatternInterface:
 
     def get_length(self): raise NotImplementedError("please stop this")
@@ -464,10 +474,11 @@ def main(name):
     p1 = Pattern(Block(Orientation.VERTICAL, 1, 1, 3), length=2)
     p2 = Pattern(Block(Orientation.VERTICAL, 3, 1, 3), length=4)
     # p3 = Pattern(Block())
+    p1a = Pattern(VBlock(1, 1, 3), VBlock(5, 1, 3), VBlock(9, 1, 3), VBlock(13, 1, 3), VBlock(17,1,3), VBlock(6, 0,2), VBlock(8, 2, 4), HBlock(1, 13, 15), HBlock(3, 15,17), length=18)
     kpcanada = KnotParams(p1, *p2.repeat(8), p1.invert(), rows=5)
     p999 = Pattern(Block(Orientation.VERTICAL, 1, 1,3), length=4)
     # kpfry = KnotParams(p1, p2, p3, p2, p4, p1.invert(), rows=5)
-    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(p999, rows=5))
+    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(p1a, rows=5))
 
 
 # Press the green button in the gutter to run the script.
