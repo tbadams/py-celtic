@@ -71,13 +71,19 @@ class Block:
         return (self.index, self.end) if self.orientation is Orientation.VERTICAL else (self.end, self.index)
 
     def invert(self, length:int, orientation:Orientation = Orientation.HORIZONTAL):
-        if orientation is Orientation.HORIZONTAL:
-            if self.orientation is Orientation.VERTICAL:
-                return Block(self.orientation, length - self.index, self.start, self.end)
-            else:
-                return Block(self.orientation, self.index, length- self.end, length - self.start)
+        # if orientation is Orientation.HORIZONTAL:
+        #     if self.orientation is Orientation.VERTICAL:
+        if orientation is not self.orientation:
+            return Block(self.orientation, length - self.index, self.start, self.end)
         else:
-            raise NotImplementedError("you're killing me")
+            return Block(self.orientation, self.index, length- self.end, length - self.start)
+        # else:
+        #     raise NotImplementedError("you're killing me")
+
+    # def offset(self, offset:int, orientation:Orientation = Orientation.HORIZONTAL):
+    #
+    #
+    # def repeat(self, offset, orientation:Orientation = Orientation.HORIZONTAL):
 
 class PatternInterface:
 
@@ -457,7 +463,11 @@ def main(name):
                    horizontal_lines={1: [(7, 9)], 3: [(7, 9)], 2: [(4, 6)]}, length=8)
     p1 = Pattern(Block(Orientation.VERTICAL, 1, 1, 3), length=2)
     p2 = Pattern(Block(Orientation.VERTICAL, 3, 1, 3), length=4)
-    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(p1, *p2.repeat(8), p1.invert(), rows=5))
+    # p3 = Pattern(Block())
+    kpcanada = KnotParams(p1, *p2.repeat(8), p1.invert(), rows=5)
+    p999 = Pattern(Block(Orientation.VERTICAL, 1, 1,3), length=4)
+    # kpfry = KnotParams(p1, p2, p3, p2, p4, p1.invert(), rows=5)
+    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(p999, rows=5))
 
 
 # Press the green button in the gutter to run the script.
