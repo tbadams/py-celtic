@@ -424,10 +424,10 @@ class KnotWindow:
                         and corner_type == CornerDirection.LEFTDOWN):
                     crossing_adjusted_y = y + self.vp.crossing_gap_length
 
-            self.create_line(crossing_adjusted_x, crossing_adjusted_y, *corner_coords)
+            self.create_line(crossing_adjusted_x, crossing_adjusted_y, *corner_coords, capstyle='butt')
 
     def create_line(self, x1, y1, x2, y2, node_type: NodeType = NodeType.LINE, state=None,
-                    width: Optional[float] = None, color: str = None):
+                    width: Optional[float] = None, color: str = None, capstyle:str = 'round'):
         if color is None:
             color = self.vp.get_color(node_type)
         if width is None:
@@ -443,7 +443,8 @@ class KnotWindow:
                                                      tags=tags,
                                                      state=state,
                                                      width=width,
-                                                     fill=color))
+                                                     fill=color,
+                                                     capstyle = capstyle))
 
     def draw_init(self):
         lines_drawn = []
