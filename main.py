@@ -80,10 +80,21 @@ class Block:
         # else:
         #     raise NotImplementedError("you're killing me")
 
-    # def offset(self, offset:int, orientation:Orientation = Orientation.HORIZONTAL):
-    #
-    #
-    # def repeat(self, offset, orientation:Orientation = Orientation.HORIZONTAL):
+    def offset(self, offset:int, orientation:Orientation = Orientation.HORIZONTAL):
+        index_offset = offset if orientation is not self.orientation else 0
+        line_offset = offset if orientation is self.orientation else 0
+        return Block(self.orientation, self.index + index_offset, self.start + line_offset, self.end + line_offset)
+
+    def repeat(self, times:int, offset, orientation:Orientation = Orientation.HORIZONTAL):
+        out = []
+        for i in range(times):
+            out.append(self.offset(i * offset, orientation))
+        return out
+
+
+    def __str__(self) -> str:
+        return "<{} -> {}>".format(str(self.start_coords()), str(self.end_coords()))
+
 
 class VBlock(Block):
     def __init__(self, index: int, start: int, end: int) -> None:
@@ -177,6 +188,32 @@ class Pattern(PatternInterface):
 
     def invert(self, orientation:Orientation = Orientation.HORIZONTAL):
         return Pattern(*list(map(lambda line: line.invert(self.get_length(), orientation), self.get_lines())))
+
+    def mirror(self, orientation:Orientation = Orientation.HORIZONTAL):
+        if orientation is Orientation.HORIZONTAL:
+            self.length = (self.length * 2) -1
+            invert = self.length - 1
+        else:
+            self.height = (self.height * 2) -1
+            invert = self.height -1
+        lines = copy.deepcopy(self.get_lines())
+        for line in lines:
+            new_block = line.invert(invert, orientation)
+            self.add_block(new_block)
+        return self
+
+    def fold(self):
+        self.length = max(self.length, self.height)
+        self.height = max(self.length, self.height)
+        lines = copy.deepcopy(self.get_lines())
+        for line in lines:
+            new_orientation = Orientation.HORIZONTAL if line.orientation is Orientation.VERTICAL else Orientation.VERTICAL
+            self.add_block(Block(new_orientation, line.index, line.start, line.end))
+        return self
+
+
+    def __str__(self) -> str:
+        return ','.join(list(map(str, self.get_lines())))
 
 
 class HorizontalPatternGroup(PatternInterface):
