@@ -236,8 +236,6 @@ class HorizontalPatternGroup(PatternInterface):
 
 
 class KnotParams:
-    rows = 9
-    cols = 33
 
     def __init__(self, *patterns, **kwargs) -> None:
         super().__init__()
@@ -248,6 +246,14 @@ class KnotParams:
         else:
             self.patterns = [Pattern()]
 
+    def get_height(self):
+        return self.patterns[0].height
+
+    def get_length(self):
+        sum = 0
+        for p in self.patterns:
+            sum += p.length
+        return sum
 
 class ViewParams:
     unit_length = 24
@@ -258,7 +264,7 @@ class ViewParams:
     line_color = "lightgreen"
     x_padding = 10
     y_padding = 10
-    line_width = 4
+    line_width = 15
 
     def __init__(self, **kwargs) -> None:
         super().__init__()
@@ -308,20 +314,20 @@ class KnotWindow:
 
     def setup_blocks(self):
         # init borders
-        for col in range(self.kp.cols):
+        for col in range(self.kp.get_length()):
             if col not in self.vertical_blocks:
                 self.vertical_blocks[col] = []
-        self.vertical_blocks[0].append((0, self.kp.rows - 1))
-        self.vertical_blocks[self.kp.cols - 1].append((0, self.kp.rows - 1))
-        for row in range(self.kp.rows):
+        self.vertical_blocks[0].append((0, self.kp.get_height() - 1))
+        self.vertical_blocks[self.kp.get_length() - 1].append((0, self.kp.get_height() - 1))
+        for row in range(self.kp.get_height()):
             if row not in self.horizontal_blocks:
                 self.horizontal_blocks[row] = []
-        self.horizontal_blocks[0].append((0, self.kp.cols - 1))
-        self.horizontal_blocks[self.kp.rows - 1].append((0, self.kp.cols - 1))
+        self.horizontal_blocks[0].append((0, self.kp.get_length() - 1))
+        self.horizontal_blocks[self.kp.get_height() - 1].append((0, self.kp.get_length() - 1))
 
         # input
         start_index = 0
-        while start_index < self.kp.cols:
+        while start_index < self.kp.get_length():
             for pattern in self.kp.patterns:
                 if pattern: # TODO fix
                     for col in pattern.vertical_lines:
@@ -350,10 +356,10 @@ class KnotWindow:
         return self.vp.x_padding + (col * self.vp.unit_length), self.vp.y_padding + (row * self.vp.unit_length)
 
     def max_y(self):
-        return self.vp.y_padding + (self.kp.rows - 1) * self.vp.unit_length
+        return self.vp.y_padding + (self.kp.get_height() - 1) * self.vp.unit_length
 
     def max_x(self):
-        return self.vp.x_padding + (self.kp.cols - 1) * self.vp.unit_length
+        return self.vp.x_padding + (self.kp.get_length() - 1) * self.vp.unit_length
 
     def by_primary_index(self, col, row):
         pass
@@ -361,7 +367,7 @@ class KnotWindow:
     def get_neighbors(self, col, row):
         out = [(col - 1, row - 1), (col + 1, row - 1), (col + 1, row + 1), (col - 1, row + 1)]
         return filter(
-            lambda coord: 0 <= coord[0] < self.kp.cols and 0 <= coord[1] < self.kp.rows, out)
+            lambda coord: 0 <= coord[0] < self.kp.get_length() and 0 <= coord[1] < self.kp.get_height(), out)
 
     def get_corners(self, x, y):
         half_unit = self.vp.unit_length / 2
@@ -448,8 +454,8 @@ class KnotWindow:
 
     def draw_init(self):
         lines_drawn = []
-        for row in range(0, self.kp.rows):
-            for col in range(0, self.kp.cols):
+        for row in range(0, self.kp.get_height()):
+            for col in range(0, self.kp.get_length()):
                 x, y = self.get_pixel(col, row)
                 dr = self.vp.dot_radius
                 nodetype = get_node_type(col, row)
@@ -512,11 +518,22 @@ def main(name):
     p1 = Pattern(Block(Orientation.VERTICAL, 1, 1, 3), length=2)
     p2 = Pattern(Block(Orientation.VERTICAL, 3, 1, 3), length=4)
     # p3 = Pattern(Block())
-    p1a = Pattern(VBlock(1, 1, 3), VBlock(5, 1, 3), VBlock(9, 1, 3), VBlock(13, 1, 3), VBlock(17,1,3), VBlock(6, 0,2), VBlock(8, 2, 4), HBlock(1, 13, 15), HBlock(3, 15,17), length=18)
+    p1a = Pattern(VBlock(1, 1, 3), VBlock(5, 1, 3), VBlock(9, 1, 3), VBlock(13, 1, 3), VBlock(17,1,3), VBlock(21, 1, 3), VBlock(6, 0,2), VBlock(8, 2, 4), HBlock(1, 13, 15), HBlock(3, 15,17), length=23, height = 5)
+    p1b = Pattern(HBlock(1, 1, 3), HBlock(3, 3, 5), VBlock(1, 1, 3), VBlock(5, 1, 3), VBlock(9, 1, 3), VBlock(13, 1, 3),
+                  VBlock(17, 1, 3), VBlock(21, 1, 3), VBlock(10, 0, 2), VBlock(12, 2, 4), HBlock(1, 19, 21), VBlock(3,3,5),
+                  HBlock(3, 17, 19), HBlock(5,1,3), HBlock(4, 4,18), VBlock(4, 4, 18),
+                  VBlock(2,20, 22), VBlock(4, 18, 20), HBlock(18, 2, 4), HBlock(20, 0, 2), length=23, height=23)
+    p1c = Pattern(HBlock(1, 1, 3), HBlock(3, 3, 5), VBlock(1, 1, 3), VBlock(5, 1, 3), VBlock(9, 1, 3), VBlock(13, 1, 3),
+                  VBlock(17, 1, 3), VBlock(21, 1, 3), HBlock(1, 15, 17), VBlock(3,3,5),
+                  HBlock(3, 13, 15), HBlock(5,1,3), HBlock(4, 4,14), VBlock(4, 4, 18),
+                  VBlock(2,20, 22), VBlock(4, 18, 20), HBlock(18, 2, 4), HBlock(20, 0, 2), length=19, height=41)
+    p2a = Pattern(*VBlock(5, 1, 3).repeat(2, 4),  HBlock(1, 1, 3),  HBlock(3, 3, 5), HBlock(4,4,10), length=10, height=5).fold()
+    p2b = Pattern(*p2a.get_lines(), VBlock(4, 10, 20), *HBlock(13, 1, 3).repeat(2, 4, orientation=Orientation.VERTICAL), HBlock(10,0,2), HBlock(12,2,4), length = p2a.length, height = p2a.height * 2-1)
+    print(str(p2a))
     kpcanada = KnotParams(p1, *p2.repeat(8), p1.invert(), rows=5)
     p999 = Pattern(Block(Orientation.VERTICAL, 1, 1,3), length=4)
     # kpfry = KnotParams(p1, p2, p3, p2, p4, p1.invert(), rows=5)
-    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(p1a, rows=5))
+    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(p2b.mirror().mirror(Orientation.VERTICAL)))
 
 
 # Press the green button in the gutter to run the script.
