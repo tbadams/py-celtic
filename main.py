@@ -262,13 +262,13 @@ class KnotParams:
 
 class ViewParams:
     unit_length = 24
-    crossing_gap_length = 6
+    crossing_gap_length = 9
     dot_radius = 2
     primary_color = "blue"
     secondary_color = "violet"
     x_padding = 10
     y_padding = 10
-    line_width = 15
+    line_width = 12
 
     def __init__(self, line_color="black", **kwargs) -> None:
         super().__init__()
@@ -508,6 +508,7 @@ class KnotWindow:
 
 def main(name):
     no_dots = {"primary_color": None, "secondary_color": None}
+    classic_vp = ViewParams(crossing_gap_length = 6, line_width = 15)
     kpa = Pattern(vertical_lines={3: [(1, 3), (5, 7)]}, horizontal_lines={4: [(2, 4)]}, length=8)
     kpb = Pattern(vertical_lines={3: [(1, 3), (5, 7)]}, horizontal_lines={1: [(3, 11)], 7: [(3, 11)], 4: [(2, 4)]},
                   length=8)
