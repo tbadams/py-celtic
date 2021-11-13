@@ -544,12 +544,11 @@ def main(name):
     finalb = p2c.mirror().mirror(Orientation.VERTICAL)
     horizontal_alternators = [ HBlock(1, 1, 3),  HBlock(3, 3, 5)]
     delineator = VBlock(5, 1, 3)
-    inner_frame_corner =  HBlock(4,4,10)
+    inner_frame_corner =  HBlock(4,4,8)
     corner_lines = [*horizontal_alternators, delineator, inner_frame_corner]
-    corner = Pattern(*corner_lines, length=7, height=5).fold()
     quadrant = Pattern(*corner_lines, *list(map(lambda x: x.fold(), corner_lines)),
-                       VBlock(4, 10, 20), *HBlock(9, 1, 3).repeat(3, 4, orientation=Orientation.VERTICAL),
-                       HBlock(14,0,2), HBlock(16,2,4), length=corner.length, height=18)
+                       VBlock(4, 8, 20), *HBlock(9, 1, 3).repeat(3, 4, orientation=Orientation.VERTICAL),
+                       HBlock(14,0,2), HBlock(16,2,4), length=7, height=18)
     frame = quadrant.mirror().mirror(Orientation.VERTICAL)
     kw = KnotWindow(vp=printvp, kp=KnotParams(frame))
 
