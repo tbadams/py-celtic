@@ -531,14 +531,26 @@ def main(name):
     p1c = Pattern(HBlock(1, 1, 3), HBlock(3, 3, 5), VBlock(1, 1, 3), VBlock(5, 1, 3), VBlock(9, 1, 3), VBlock(13, 1, 3),
                   VBlock(17, 1, 3), VBlock(21, 1, 3), HBlock(1, 15, 17), VBlock(3,3,5),
                   HBlock(3, 13, 15), HBlock(5,1,3), HBlock(4, 4,14), VBlock(4, 4, 18),
-                  VBlock(2,20, 22), VBlock(4, 18, 20), HBlock(18, 2, 4), HBlock(20, 0, 2), length=19, height=41)
+                  VBlock(2,20, 22), VBlock(4, 18, 20), HBlock(18, 2,
+                                                              4), HBlock(20, 0, 2), length=19, height=41)
     p2a = Pattern(*VBlock(5, 1, 3).repeat(2, 4),  HBlock(1, 1, 3),  HBlock(3, 3, 5), HBlock(4,4,10), length=10, height=5).fold()
-    p2b = Pattern(*p2a.get_lines(), VBlock(4, 10, 20), *HBlock(13, 1, 3).repeat(2, 4, orientation=Orientation.VERTICAL), HBlock(10,0,2), HBlock(12,2,4), length = p2a.length, height = p2a.height * 2-1)
+    p2b = Pattern(*p2a.get_lines(), VBlock(4, 10, 20), *HBlock(13, 1, 3).repeat(2, 4, orientation=Orientation.VERTICAL), HBlock(10,0,2), HBlock(12,2,4), length = p2a.length, height = (p2a.height * 2) -2)
     print(str(p2a))
-    kpcanada = KnotParams(p1, *p2.repeat(8), p1.invert(), rows=5)
-    p999 = Pattern(Block(Orientation.VERTICAL, 1, 1,3), length=4)
-    # kpfry = KnotParams(p1, p2, p3, p2, p4, p1.invert(), rows=5)
-    kw = KnotWindow(vp=ViewParams(), kp=KnotParams(p2b.mirror().mirror(Orientation.VERTICAL)))
+    p2c = Pattern(*p2a.get_lines(), VBlock(4, 10, 20), *HBlock(13, 1, 3).repeat(2, 4, orientation=Orientation.VERTICAL),
+                  HBlock(10, 0, 2), HBlock(12, 2, 4), length=8, height=8)
+    printvp = ViewParams(crossing_gap_length = 6, line_width=15)
+    final = p2b.mirror().mirror(Orientation.VERTICAL)
+    finalb = p2c.mirror().mirror(Orientation.VERTICAL)
+    horizontal_alternators = [ HBlock(1, 1, 3),  HBlock(3, 3, 5)]
+    delineator = VBlock(5, 1, 3)
+    inner_frame_corner =  HBlock(4,4,10)
+    corner_lines = [*horizontal_alternators, delineator, inner_frame_corner]
+    corner = Pattern(*corner_lines, length=7, height=5).fold()
+    quadrant = Pattern(*corner_lines, *list(map(lambda x: x.fold(), corner_lines)),
+                       VBlock(4, 10, 20), *HBlock(9, 1, 3).repeat(3, 4, orientation=Orientation.VERTICAL),
+                       HBlock(14,0,2), HBlock(16,2,4), length=corner.length, height=18)
+    frame = quadrant.mirror().mirror(Orientation.VERTICAL)
+    kw = KnotWindow(vp=printvp, kp=KnotParams(frame))
 
 
 # Press the green button in the gutter to run the script.
