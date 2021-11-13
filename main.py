@@ -164,7 +164,8 @@ class Pattern(PatternInterface):
             starty = self.height + 1
             self.height = pattern.height
 
-        for line in self.get_lines():
+        lines = self.get_lines()
+        for line in lines:
             index_offset = startx if line.orientation is Orientation.VERTICAL else starty
             line_offset = starty if line.orientation is Orientation.VERTICAL else startx
             self.add_block(Block(line.orientation, line.index + index_offset, line.start + line_offset, line.end + line_offset))
@@ -175,6 +176,7 @@ class Pattern(PatternInterface):
         for col, lines in pattern.horizontal_lines.items():
             for line in lines:
                 self.horizontal_lines[col + startx].append((line[0] + starty, line[1] + starty))
+        return self
 
     def get_lines(self):
         out = []
@@ -261,13 +263,13 @@ class ViewParams:
     dot_radius = 2
     primary_color = "blue"
     secondary_color = "violet"
-    line_color = "lightgreen"
     x_padding = 10
     y_padding = 10
     line_width = 15
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, line_color="black", **kwargs) -> None:
         super().__init__()
+        self.line_color = line_color
         self.__dict__.update(kwargs)
 
     def get_color(self, node_type: NodeType):
