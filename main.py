@@ -109,6 +109,16 @@ class HBlock(Block):
     def __init__(self, index: int, start: int, end: int) -> None:
         super().__init__(Orientation.HORIZONTAL, index, start, end)
 
+class LBlock(Block):
+    def __init__(self, x1: int, y1: int, x2: int, y2) -> None:
+        if x1 is x2:
+            super().__init__(Orientation.VERTICAL, x1, y1, y2)
+        elif y1 is y2:
+            super().__init__(Orientation.HORIZONTAL, y1, x1, x2)
+        else:
+            raise ValueError("not a horizontal or vertical line: {}, {} -> {}, {}".format(x1, y1, x2, y2))
+
+
 
 class PatternInterface:
 
@@ -542,15 +552,31 @@ def main(name):
     printvp = ViewParams(crossing_gap_length = 6, line_width=15)
     final = p2b.mirror().mirror(Orientation.VERTICAL)
     finalb = p2c.mirror().mirror(Orientation.VERTICAL)
+    delineator_start = 1
+    delineator_interval = 4
+    frame_width = 4
+    block_length = 2
+    corner_length = 8
+    primary_corner_length = corner_length if corner_length % 2 == 0 else corner_length + 1
+    quadrant_height = 18
     horizontal_alternators = [ HBlock(1, 1, 3),  HBlock(3, 3, 5)]
-    delineator = VBlock(5, 1, 3)
-    inner_frame_corner =  HBlock(4,4,8)
-    corner_lines = [*horizontal_alternators, delineator, inner_frame_corner]
+    delineators = [VBlock(i, 1, 3) for i in range(1, corner_length, 4)]
+    inner_frame_corner =  HBlock(frame_width,frame_width,primary_corner_length)
+    corner_lines = [*horizontal_alternators, *delineators, inner_frame_corner]
+    inner_frame_side = VBlock(frame_width, primary_corner_length, quadrant_height)
+    next_y = corner_length
+    while (next_y - 1) % delineator_interval is not 0:
+        next_y += 1
+    side_deliniators = [HBlock(i, 1, 3) for i in range(next_y,quadrant_height, delineator_interval)]
+    last_delineator_y = side_deliniators[-1].index
+    vertical_alternators = [HBlock(last_delineator_y - 3,0,2), HBlock(last_delineator_y - 1,2,4)]
     quadrant = Pattern(*corner_lines, *list(map(lambda x: x.fold(), corner_lines)),
-                       VBlock(4, 8, 20), *HBlock(9, 1, 3).repeat(3, 4, orientation=Orientation.VERTICAL),
-                       HBlock(14,0,2), HBlock(16,2,4), length=7, height=18)
+                       inner_frame_side, *side_deliniators,
+                       *vertical_alternators, length=corner_length, height=quadrant_height)
     frame = quadrant.mirror().mirror(Orientation.VERTICAL)
+    print("{} {}".format(frame.get_length()-1, frame.get_height()-1))
     kw = KnotWindow(vp=printvp, kp=KnotParams(frame))
+
 
 
 # Press the green button in the gutter to run the script.
