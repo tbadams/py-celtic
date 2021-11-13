@@ -91,6 +91,10 @@ class Block:
             out.append(self.offset(i * offset, orientation))
         return out
 
+    def fold(self):
+        new_orientation = Orientation.HORIZONTAL if self.orientation is Orientation.VERTICAL else Orientation.VERTICAL
+        return Block(new_orientation, self.index, self.start, self.end)
+
 
     def __str__(self) -> str:
         return "<{} -> {}>".format(str(self.start_coords()), str(self.end_coords()))
@@ -209,8 +213,7 @@ class Pattern(PatternInterface):
         self.height = max(self.length, self.height)
         lines = copy.deepcopy(self.get_lines())
         for line in lines:
-            new_orientation = Orientation.HORIZONTAL if line.orientation is Orientation.VERTICAL else Orientation.VERTICAL
-            self.add_block(Block(new_orientation, line.index, line.start, line.end))
+            self.add_block(line.fold())
         return self
 
 
