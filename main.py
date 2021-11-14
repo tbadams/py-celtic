@@ -172,6 +172,10 @@ class Pattern(PatternInterface):
     def add_block(self, line):
         self.add(line.index, line.orientation, (line.start, line.end))
 
+    def add_blocks(self, lines):
+        for line in lines:
+            self.add(line.index, line.orientation, (line.start, line.end))
+
     def append(self, pattern, orientation: Orientation = Orientation.HORIZONTAL):
         startx = 0
         starty = 0
@@ -205,6 +209,12 @@ class Pattern(PatternInterface):
             for line in lines:
                 out.append(Block(Orientation.HORIZONTAL, row, line[0], line[1]))
         return out
+
+    def get_borders(self):
+        return [VBlock(0, 0, self.get_height() - 1),
+                VBlock(self.get_length() - 1, 0, self.get_height() - 1),
+                HBlock(0, 0, self.get_length() - 1),
+                HBlock(self.get_height() - 1, 0, self.get_length() - 1)]
 
     def invert(self, orientation:Orientation = Orientation.HORIZONTAL):
         return Pattern(*list(map(lambda line: line.invert(self.get_length(), orientation), self.get_lines())))
@@ -242,18 +252,6 @@ class HorizontalPatternGroup(PatternInterface):
         self.patterns = patterns
 
 
-# class PatternGroup:
-#     thresholds = {}
-#
-#     def __init__(self, *patterns) -> None:
-#         super().__init__()
-#         for pattern in patterns:
-#
-
-
-
-
-
 class KnotParams:
 
     def __init__(self, *patterns, **kwargs) -> None:
@@ -273,6 +271,7 @@ class KnotParams:
         for p in self.patterns:
             sum += p.length
         return sum
+
 
 class ViewParams:
     unit_length = 24
@@ -324,12 +323,12 @@ class KnotWindow:
         self.draw_init()
         hide_helpers_button = tk.Button(window, text="Toggle (H)elpers", command=self.toggle_helpers)
         hide_helpers_button.pack(padx=10,pady=10, side=tk.LEFT)
-        h_sym = tk.IntVar()
-        h_symmetry_button = Checkbutton(window, text="Horizontal Symmetry", variable=h_sym)
-        h_symmetry_button.pack(padx=10,pady=10, side=tk.LEFT)
-        v_sym = tk.IntVar()
-        v_symmetry_button = Checkbutton(window, text="Vertical Symmetry", variable=v_sym)
-        v_symmetry_button.pack(padx=10,pady=10, side=tk.LEFT)
+        # h_sym = tk.IntVar()
+        # h_symmetry_button = Checkbutton(window, text="Horizontal Symmetry", variable=h_sym)
+        # h_symmetry_button.pack(padx=10,pady=10, side=tk.LEFT)
+        # v_sym = tk.IntVar()
+        # v_symmetry_button = Checkbutton(window, text="Vertical Symmetry", variable=v_sym)
+        # v_symmetry_button.pack(padx=10,pady=10, side=tk.LEFT)
 
         # Hotkeys
         window.bind('h', lambda e: self.toggle_helpers())
@@ -342,13 +341,11 @@ class KnotWindow:
         for col in range(self.kp.get_length()):
             if col not in self.vertical_blocks:
                 self.vertical_blocks[col] = []
-        self.vertical_blocks[0].append((0, self.kp.get_height() - 1))
-        self.vertical_blocks[self.kp.get_length() - 1].append((0, self.kp.get_height() - 1))
         for row in range(self.kp.get_height()):
             if row not in self.horizontal_blocks:
                 self.horizontal_blocks[row] = []
-        self.horizontal_blocks[0].append((0, self.kp.get_length() - 1))
-        self.horizontal_blocks[self.kp.get_height() - 1].append((0, self.kp.get_length() - 1))
+        pattern = self.kp.patterns[0]
+        pattern.add_blocks(pattern.get_borders())
 
         # input
         start_index = 0
