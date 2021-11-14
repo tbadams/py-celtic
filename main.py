@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from enum import Enum
+from tkinter.ttk import Checkbutton
 from typing import Optional
 from collections import deque
 import copy
@@ -29,6 +30,9 @@ def get_node_type(col, row):
 
 def get_lane_type(index: int):
     return NodeType.PRIMARY if index % 2 == 0 else NodeType.SECONDARY
+
+def overextend(num:int, parity = 0):
+    return num if num % 2 == parity else num + 1
 
 
 class Orientation(Enum):
@@ -319,7 +323,13 @@ class KnotWindow:
         canvas.pack()
         self.draw_init()
         hide_helpers_button = tk.Button(window, text="Toggle (H)elpers", command=self.toggle_helpers)
-        hide_helpers_button.pack()
+        hide_helpers_button.pack(padx=10,pady=10, side=tk.LEFT)
+        h_sym = tk.IntVar()
+        h_symmetry_button = Checkbutton(window, text="Horizontal Symmetry", variable=h_sym)
+        h_symmetry_button.pack(padx=10,pady=10, side=tk.LEFT)
+        v_sym = tk.IntVar()
+        v_symmetry_button = Checkbutton(window, text="Vertical Symmetry", variable=v_sym)
+        v_symmetry_button.pack(padx=10,pady=10, side=tk.LEFT)
 
         # Hotkeys
         window.bind('h', lambda e: self.toggle_helpers())
@@ -558,21 +568,22 @@ def main(name):
     block_length = 2
     corner_length = 8
     primary_corner_length = corner_length if corner_length % 2 == 0 else corner_length + 1
-    quadrant_height = 18
+    quadrant_height = 8
     horizontal_alternators = [ HBlock(1, 1, 3),  HBlock(3, 3, 5)]
     delineators = [VBlock(i, 1, 3) for i in range(1, corner_length, 4)]
     inner_frame_corner =  HBlock(frame_width,frame_width,primary_corner_length)
     corner_lines = [*horizontal_alternators, *delineators, inner_frame_corner]
-    inner_frame_side = VBlock(frame_width, primary_corner_length, quadrant_height)
-    next_y = corner_length
-    while (next_y - 1) % delineator_interval is not 0:
-        next_y += 1
-    side_deliniators = [HBlock(i, 1, 3) for i in range(next_y,quadrant_height, delineator_interval)]
-    last_delineator_y = side_deliniators[-1].index
-    vertical_alternators = [HBlock(last_delineator_y - 3,0,2), HBlock(last_delineator_y - 1,2,4)]
+    # inner_frame_side = VBlock(frame_width, primary_corner_length, overextend(quadrant_height))
+    # next_y = corner_length
+    # while (next_y - 1) % delineator_interval is not 0:
+    #     next_y += 1
+    # side_deliniators = [HBlock(i, 1, 3) for i in range(next_y,quadrant_height, delineator_interval)]
+    # last_delineator_y = side_deliniators[-1].index
+    # vertical_alternators = [HBlock(last_delineator_y - 3,0,2), HBlock(last_delineator_y - 1,2,4)]
     quadrant = Pattern(*corner_lines, *list(map(lambda x: x.fold(), corner_lines)),
-                       inner_frame_side, *side_deliniators,
-                       *vertical_alternators, length=corner_length, height=quadrant_height)
+                       # inner_frame_side, *side_deliniators,
+                       # *vertical_alternators,
+                       length=corner_length, height=quadrant_height)
     frame = quadrant.mirror().mirror(Orientation.VERTICAL)
     print("{} {}".format(frame.get_length()-1, frame.get_height()-1))
     kw = KnotWindow(vp=printvp, kp=KnotParams(frame))
