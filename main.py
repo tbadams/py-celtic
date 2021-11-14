@@ -475,22 +475,11 @@ class KnotWindow:
                                                      capstyle = capstyle))
 
     def draw_init(self):
-        lines_drawn = []
         for row in range(0, self.kp.get_height()):
             for col in range(0, self.kp.get_length()):
                 x, y = self.get_pixel(col, row)
                 dr = self.vp.dot_radius
                 nodetype = get_node_type(col, row)
-                if nodetype is NodeType.PRIMARY:
-                    color = self.vp.primary_color
-                elif nodetype is NodeType.SECONDARY:
-                    color = self.vp.secondary_color
-                else:
-                    color = None  # self.vp.line_color
-                if color:
-                    dot_id = self.canvas.create_oval(x - dr, y - dr, x + dr, y + dr, outline=color, fill=color,
-                                                     state='hidden', tags=(TAG_DOT, TAG_HELPER))
-                    self.dot_ids[x, y] = dot_id
                 if nodetype is NodeType.LINE:
                     corners = self.get_corners(x, y)
                     if not self.is_blocking(col, row):
@@ -510,6 +499,17 @@ class KnotWindow:
                             if CornerDirection.LEFTDOWN in corners and CornerDirection.RIGHTDOWN in corners:
                                 self.create_line(*corners[CornerDirection.LEFTDOWN],
                                                  *corners[CornerDirection.RIGHTDOWN])
+                # helper dots
+                if nodetype is NodeType.PRIMARY:
+                    color = self.vp.primary_color
+                elif nodetype is NodeType.SECONDARY:
+                    color = self.vp.secondary_color
+                else:
+                    color = 'brown' if self.cross_dirs[(row, col)] == Diagonal.LEFTUP_RIGHTDOWN else 'tan' # self.vp.line_color
+                if color:
+                    dot_id = self.canvas.create_oval(x - dr, y - dr, x + dr, y + dr, outline=color, fill=color,
+                                                     state='hidden', tags=(TAG_DOT, TAG_HELPER))
+                    self.dot_ids[x, y] = dot_id
         # draw blocking line helpers
         for i, lines in self.horizontal_blocks.items():
             for line in lines:
