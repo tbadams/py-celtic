@@ -108,10 +108,12 @@ class VBlock(Block):
     def __init__(self, index: int, start: int, end: int) -> None:
         super().__init__(Orientation.VERTICAL, index, start, end)
 
+
 class HBlock(Block):
 
     def __init__(self, index: int, start: int, end: int) -> None:
         super().__init__(Orientation.HORIZONTAL, index, start, end)
+
 
 class LBlock(Block):
     def __init__(self, x1: int, y1: int, x2: int, y2) -> None:
@@ -121,7 +123,6 @@ class LBlock(Block):
             super().__init__(Orientation.HORIZONTAL, y1, x1, x2)
         else:
             raise ValueError("not a horizontal or vertical line: {}, {} -> {}, {}".format(x1, y1, x2, y2))
-
 
 
 class PatternInterface:
@@ -142,6 +143,7 @@ class PatternInterface:
 
     def get_lines(self):
         raise NotImplementedError("no")
+
 
 class Pattern(PatternInterface):
 
@@ -304,6 +306,7 @@ class KnotWindow:
     horizontal_blocks: dict = {}
     vertical_blocks: dict = {}
     cross_dirs = {}
+    line_hues = {}
     helpers_hidden = True
 
     def __init__(self, kp: KnotParams = KnotParams(), vp: ViewParams = ViewParams()) -> None:
@@ -322,7 +325,7 @@ class KnotWindow:
         canvas.pack()
         self.draw_init()
         hide_helpers_button = tk.Button(window, text="Toggle (H)elpers", command=self.toggle_helpers)
-        hide_helpers_button.pack(padx=10,pady=10, side=tk.LEFT)
+        hide_helpers_button.pack(padx=10, pady=10, side=tk.LEFT)
         # h_sym = tk.IntVar()
         # h_symmetry_button = Checkbutton(window, text="Horizontal Symmetry", variable=h_sym)
         # h_symmetry_button.pack(padx=10,pady=10, side=tk.LEFT)
@@ -351,7 +354,7 @@ class KnotWindow:
         start_index = 0
         while start_index < self.kp.get_length():
             for pattern in self.kp.patterns:
-                if pattern: # TODO fix
+                if pattern:  # TODO fix
                     for col in pattern.vertical_lines:
                         self.vertical_blocks[col + start_index] = pattern.vertical_lines[col]
                     for row in pattern.horizontal_lines:
@@ -523,7 +526,7 @@ class KnotWindow:
                                  width=self.vp.line_width / 2)
 
 
-def main(name):
+def main():
     no_dots = {"primary_color": None, "secondary_color": None}
     classic_vp = ViewParams(crossing_gap_length = 6, line_width = 15)
     kpa = Pattern(vertical_lines={3: [(1, 3), (5, 7)]}, horizontal_lines={4: [(2, 4)]}, length=8)
@@ -541,15 +544,15 @@ def main(name):
     p1 = Pattern(Block(Orientation.VERTICAL, 1, 1, 3), length=2)
     p2 = Pattern(Block(Orientation.VERTICAL, 3, 1, 3), length=4)
     # p3 = Pattern(Block())
-    p1a = Pattern(VBlock(1, 1, 3), VBlock(5, 1, 3), VBlock(9, 1, 3), VBlock(13, 1, 3), VBlock(17,1,3), VBlock(21, 1, 3), VBlock(6, 0,2), VBlock(8, 2, 4), HBlock(1, 13, 15), HBlock(3, 15,17), length=23, height = 5)
+    p1a = Pattern(VBlock(1, 1, 3), VBlock(5, 1, 3), VBlock(9, 1, 3), VBlock(13, 1, 3), VBlock(17,1,3), VBlock(21, 1, 3), VBlock(6, 0, 2), VBlock(8, 2, 4), HBlock(1, 13, 15), HBlock(3, 15,17), length=23, height = 5)
     p1b = Pattern(HBlock(1, 1, 3), HBlock(3, 3, 5), VBlock(1, 1, 3), VBlock(5, 1, 3), VBlock(9, 1, 3), VBlock(13, 1, 3),
-                  VBlock(17, 1, 3), VBlock(21, 1, 3), VBlock(10, 0, 2), VBlock(12, 2, 4), HBlock(1, 19, 21), VBlock(3,3,5),
-                  HBlock(3, 17, 19), HBlock(5,1,3), HBlock(4, 4,18), VBlock(4, 4, 18),
-                  VBlock(2,20, 22), VBlock(4, 18, 20), HBlock(18, 2, 4), HBlock(20, 0, 2), length=23, height=23)
+                  VBlock(17, 1, 3), VBlock(21, 1, 3), VBlock(10, 0, 2), VBlock(12, 2, 4), HBlock(1, 19, 21), VBlock(3, 3, 5),
+                  HBlock(3, 17, 19), HBlock(5, 1, 3), HBlock(4, 4,18), VBlock(4, 4, 18),
+                  VBlock(2, 20, 22), VBlock(4, 18, 20), HBlock(18, 2, 4), HBlock(20, 0, 2), length=23, height=23)
     p1c = Pattern(HBlock(1, 1, 3), HBlock(3, 3, 5), VBlock(1, 1, 3), VBlock(5, 1, 3), VBlock(9, 1, 3), VBlock(13, 1, 3),
                   VBlock(17, 1, 3), VBlock(21, 1, 3), HBlock(1, 15, 17), VBlock(3,3,5),
                   HBlock(3, 13, 15), HBlock(5,1,3), HBlock(4, 4,14), VBlock(4, 4, 18),
-                  VBlock(2,20, 22), VBlock(4, 18, 20), HBlock(18, 2,
+                  VBlock(2, 20, 22), VBlock(4, 18, 20), HBlock(18, 2,
                                                               4), HBlock(20, 0, 2), length=19, height=41)
     p2a = Pattern(*VBlock(5, 1, 3).repeat(2, 4),  HBlock(1, 1, 3),  HBlock(3, 3, 5), HBlock(4,4,10), length=10, height=5).fold()
     p2b = Pattern(*p2a.get_lines(), VBlock(4, 10, 20), *HBlock(13, 1, 3).repeat(2, 4, orientation=Orientation.VERTICAL), HBlock(10,0,2), HBlock(12,2,4), length = p2a.length, height = (p2a.height * 2) -2)
@@ -589,6 +592,4 @@ def main(name):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    main('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    main()
